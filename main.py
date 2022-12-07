@@ -1,82 +1,136 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.constants import c
+import scipy.fft
+import scipy.constants as constants
+from utils import *
 
 plt.rcParams.update({'font.size': 16}) # Tamaño de la fuente del plot
 
-def pulso_gaussiano(t, τ, ω_0, φ):
-    """
-    Genera un pulso gaussiano dada su duración, frecuencia central y fase.
-    Las unidades han de ser consistentes entre t, τ y ω_0.
-    El pulso está normalizado.
-
-    Un pulso gaussiano viene caracterizado por una envolvente en forma de gaussiana de expresión:
-
-    E_envolvente = exp(-t² / 2*τ)
-
-    Donde τ es la duración temporal del pulso, que está relacionada con el ancho de banda por la expresión:
-
-    τ = FWHM / (2 * √log(2))
-
-    FHWM es la anchura a media altura (full width half maximum).
-
-    La envolvente viene modulada por un término exponencial complejo que depende de la frecuencia central de la onda,
-    de manera que el pulso vendrá dado por el producto de la envolvente y esta exponencial, además del producto
-    con la exponencial compleja que lleva la fase de la envolvente de la onda portadora.
-
-    E(t) = E_envolvente * exp(i * ω_0 * t) * exp(i * φ(t)) = exp(-t² / 2*τ) * exp(i * ( ω_0 * t + φ(t) ) )
-
-    Argumentos:
-        t (float): vector de tiempos
-        τ (float): anchura del pulso
-        ω_0 (float): frecuencia central (radianes / unidad de tiempo)
-        φ (float): fase de la envolvente de la onda portadora (rad)
-
-    Devuelve:
-        E_pulso (float): forma del pulso gaussiano en el tiempo especificado
-    """
-
-    return np.exp(-t*t / (2 * τ * τ)) * np.exp(1j * ( ω_0 * t + φ ))
 
 if __name__ == '__main__':
 
+    numero_de_muestras = 2048
+
     # -- Parámetros del pulso --
+    A = 1 # Amplitud del pulso
     λ_0 = 1.55 # Longitud de onda de ejemplo (en micrómetros)
-    ω_0 = 2 * np.pi * c * 1e-12 / (λ_0 * 1e-6) # Frecuencia angular del pulso (rad / ps)
-    φ_0 = np.array([np.pi / 4 for i in range(2000)]) # Fase (constante en este caso)
+    ω_0 = 2 * np.pi * constants.c * 1e-12 / (λ_0 * 1e-6) # Frecuencia angular del pulso (rad / ps)
+    φ_0 =  0 * np.ones(numero_de_muestras) # Fase (constante en este caso)
     τ = 1 # Duración del pulso (ps)
 
-    t = np.linspace(-5, 5, num=2000) # Vector de tiempos (centrado en cero, ps)
-    pulso = pulso_gaussiano(t, τ, ω_0, φ_0) # Vector con el campo complejo del pulso
-    I = np.real(pulso) * np.real(pulso) + np.imag(pulso) * np.imag(pulso)
 
-    # -- Plot 1: partes real e imaginaria del pulso--
-    fig, ax = plt.subplots(2,1)
+    t, Δt = np.linspace(-5, 5, num=numero_de_muestras, retstep=True) # Vector de tiempos (centrado en cero, ps). Guardamos la separación entre datos
+    pulso = pulso_gaussiano(t, A, τ, ω_0, φ_0) # Vector con el campo complejo del pulso
+    I = np.abs(pulso) * np.abs(pulso) # Vector con la intensidad del pulso
 
-    # -- Parte real del pulso + envolvente --
-    ax[0].plot(t, np.real(pulso), label = r'$\Re \{E(t)\}$')
-    ax[0].plot(t, np.sqrt(I), '--', label = 'Envolvente')
-    ax[0].plot(t, φ_0, '-.', label = r'$\phi (t)$')
-    ax[0].set_xlabel("Tiempo (ps)")
-    ax[0].set_ylabel("Campo / Envolvente (Normalizado)")
+    # Plot partes real e imaginaria del pulso
+    plot_real_imag(t, pulso, φ_0, I)
+    plt.show()
+    # Comprobamos que el hacer la transformada y su inversa nos devuelve el pulso original
+    plot_real_imag(t, ifft(fft(pulso)), φ_0, np.abs(ifft(fft(pulso)))**2)
+    plt.show()
+
+    # Plot de la intensidad
+    plot_intensidad(t, I)
+    plt.show()
+
+    # Construimos el array de frecuencias angulares
+    ω = 2 * np.pi * np.arange(numero_de_muestras) / (Δt * numero_de_muestras) # Array de frecuencias angulares (rad / ps)
+    transformada_analitica = transformada_pulso_gaussiano(ω, A, τ, ω_0, φ_0) # Transformada analítica de un pulso gaussiano con fase constante
+
+    # Comprobamos que el hacer su transformada inversa nos devuelve el pulso original
+    plot_real_imag(t, np.fft.ifftshift((ifft(transformada_analitica))), φ_0, np.abs(np.fft.ifftshift((ifft(transformada_analitica))))**2) #! Hay que centrar el pulso en cero al realizar la inversa. Además no recuperamos amplitud original
+    plt.show()
+    #! No devuelve el pulso original. Hay diferencia en la amplitud y también en la fase
+
+    # -- Plot : comparación de los resultados obtenidos por np.fft.fft, scipy.fft.fft y mi implementación
+    transformada_numpy = np.fft.fft(pulso)
+    transformada_scipy = scipy.fft.fft(pulso)
+    transformada_propia = fft(pulso)
+
+    diferencias_numpy = np.abs(transformada_numpy - transformada_propia) * 1e13
+    diferencias_scipy = np.abs(transformada_scipy - transformada_propia) * 1e13
+    diferencias_ambos = np.abs(transformada_scipy - transformada_numpy) * 1e13
+
+    fig, ax = plt.subplots(3, 1)
+    ax[0].plot(ω, diferencias_numpy, label='Diferencia con NumPy')
+    ax[1].plot(ω, diferencias_scipy, label='Diferencia con SciPy', color='orange')
+    ax[2].plot(ω, diferencias_ambos, label='Diferencia entre NumPy y SciPy', color='green')
+    fig.suptitle("Comprobación valores obtenidos con las distintas funciones")
+    fig.supxlabel("ω (rad / ps)")
+    fig.supylabel(r"Diferencia entre valores ($\times 10^{-13}$)")
     ax[0].grid()
-    ax[0].legend()
-
-
-    # -- Parte imaginaria del pulso + envolvente --
-    ax[1].plot(t, np.imag(pulso), label = r'$\Im \{E(t)\}$')
-    ax[1].plot(t, np.sqrt(I), '--', label = 'Envolvente')
-    ax[1].plot(t, φ_0, '-.', label = r'$\phi (t)$')
-    ax[1].set_xlabel("Tiempo (ps)")
-    ax[1].set_ylabel("Campo / Envolvente (Normalizado)")
     ax[1].grid()
+    ax[2].grid()
+    ax[0].legend()
     ax[1].legend()
+    ax[2].legend()
 
-    # -- Plot 2: intensidad --
-    fig1, ax1 = plt.subplots()
-    ax1.plot(t, I)
-    ax1.set_xlabel("Tiempo (ps)")
-    ax1.set_ylabel("Intensidad")
-    ax1.grid()
+    plt.show()
 
+
+    # -- Plot : comparación de los resultados obtenidos por fft y DFT
+    transformada_DFT = DFT(pulso)
+
+    diferencias_DFT_fft = np.abs(transformada_propia - transformada_DFT) * 1e10
+
+    fig, ax = plt.subplots()
+    ax.plot(ω, diferencias_DFT_fft)
+    fig.suptitle("Comprobación valores obtenidos con fft y DFT")
+    fig.supxlabel("ω (rad / ps)")
+    fig.supylabel(r"Diferencia entre valores ($\times 10^{-10}$)")
+    ax.grid()
+
+    plt.show()
+
+    #! Las diferencias de resultados entre algoritmos son muy pequeñas y la velocidad de la fft es muy superior a la DFT
+
+    # Comparacion resultado entre la transformada analítica y la fft. Comparo la transformada normalizada porque no tienen la misma escala
+
+    fft_normalizada = transformada_propia / np.max(transformada_propia)
+    analitica_normalizada = transformada_analitica / np.max(transformada_analitica)
+
+    diferencias_analitica_fft = np.abs(fft_normalizada - analitica_normalizada)
+
+    fig, ax = plt.subplots()
+    ax.plot(ω, diferencias_analitica_fft)
+    fig.supylabel("Diferencia entre amplitud coeficientes")
+    fig.supxlabel("ω (rad / ps)")
+    ax.set_title("Diferencia entre fft normalizdas")
+
+    ax.grid()
+
+    plt.show()
+
+    # Comparación de resultados entre la transformada inversa ifft y analítica
+
+    diferencias_inversas = np.abs(ifft(fft_normalizada) -  ifft(analitica_normalizada))
+
+    fig, ax = plt.subplots()
+    ax.plot(t, diferencias_inversas)
+    fig.supylabel("Diferencia entre valores")
+    fig.supxlabel("t (ps)")
+    ax.set_title("Diferencia entre ifft normalizadas")
+    ax.grid()
+
+    plt.show()
+
+    # Parece haber un desfase entre las dos señales
+
+    # Transformadas de pulsos con distintas anchuras temporales 
+    τ_1, τ_2, τ_3 = 2.0, 1.0, 0.5 # En ps
+    pulso_1 = fft(pulso_gaussiano(t, A, τ_1, ω_0, φ_0))
+    pulso_2 = fft(pulso_gaussiano(t, A, τ_2, ω_0, φ_0))
+    pulso_3 = fft(pulso_gaussiano(t, A, τ_3, ω_0, φ_0))
+
+    fig, ax = plt.subplots()
+    ax.plot(ω, np.abs(pulso_1), label=r"$\tau =$"+f"{τ_1} ps")
+    ax.plot(ω, np.abs(pulso_2), label=r"$\tau =$"+f"{τ_2} ps")
+    ax.plot(ω, np.abs(pulso_3), label=r"$\tau =$"+f"{τ_3} ps")
+    ax.set_ylabel("Amplitud coeficientes")
+    ax.set_xlabel("ω (rad / ps)")
+    ax.set_xlim([1200, 1230])
+    ax.grid()
+    ax.legend()
+    # Vemos que se cumple que a mayor anchura temporal menor anchura espectral
     plt.show()
