@@ -1,131 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
-
-def pulso_gaussiano(t, A, τ, ω_0, φ):
-    """
-    Genera un pulso gaussiano dada su duración, frecuencia central y fase.
-    Las unidades han de ser consistentes entre t, τ y ω_0.
-    El pulso está normalizado.
-
-    Un pulso gaussiano viene caracterizado por una envolvente en forma de gaussiana de expresión:
-
-    E_envolvente = A * exp(-t² / 2*τ)
-
-    Donde τ es la duración temporal del pulso, que está relacionada con el ancho de banda por la expresión:
-
-    τ = FWHM / (2 * √log(2))
-
-    FHWM es la anchura a media altura (full width half maximum).
-
-    La envolvente viene modulada por un término exponencial complejo que depende de la frecuencia central de la onda,
-    de manera que el pulso vendrá dado por el producto de la envolvente y esta exponeFourier Transform of Gaussian Modulated Functionncial, además del producto
-    con la exponencial compleja que lleva la fase de la envolvente de la onda portadora.
-
-    E(t) = E_envolvente * exp(i * ω_0 * t) * exp(i * φ(t)) = A * exp(-t² / 2*τ) * exp(i * ( ω_0 * t + φ(t) ) )
-
-    Argumentos:
-        t (float): vector de tiempos
-        A (float): amplitud del pulso
-        τ (float): anchura del pulso
-        ω_0 (float): frecuencia central (radianes / unidad de tiempo)
-        φ (float): fase de la envolvente de la onda portadora (rad)
-
-    Devuelve:
-        E_pulso (float): forma del pulso gaussiano en el tiempo especificado
-    """
-
-    return A * np.exp(-t*t / (2 * τ)) * np.exp(1j * ( ω_0 * t + φ ))
-
-
-
-def transformada_pulso_gaussiano(ω, A, τ, ω_0, φ):
-    """
-    Calcula la transformada de Fourier analítica de un pulso gaussiano con una onda moduladora y fase constante.
-
-    El pulso viene dado por:
-        f(t) = A * exp(-t² / 2*τ) * exp(i * ( ω_0 * t + φ) )
-
-    Su transformada de Fourier será:
-        F(ω) = A  * sqrt(2π / τ) * exp(i * φ) * exp(-(ω - ω_0)²  / (2 * τ))
-
-    Args:
-        ω (np.array): array de frecuencias en los que evaluar la transformada
-        A (float): Amplitud del pulso
-        τ (float): anchura del pulso
-        ω_0 (float): frecuencia central (radianes / unidad de tiempo)
-        φ (float): fase de la envolvente de la onda portadora (rad) [cte]
-
-    Returns:
-        np.array: array de los valores de la transformada de Fourier en las frecuencias dadas
-    """
-
-    return A * np.sqrt(2 * np.pi * τ) * np.exp(1j * φ) * np.exp(- (ω - ω_0)*(ω - ω_0) / (2 * τ)) 
-
-
-
-def plot_real_imag(t, pulso, φ_0, I):
-    """
-    Realiza una representación de las partes real e imaginaria del pulso pasado
-
-    Args:
-        t (float, np.array): array de tiempos
-        pulso (np.ndarray[np.complex]): array con los valores del pulso en un tiempo t
-        φ_0 (float, np.array): array de la fase en un tiempo t
-        I (float, np.array): array con la intensidad del pulso en un tiempo t
-
-    Devuelve:
-        tuple(matplotlib Figure, matplotlib Axis)
-    """
-    fig, ax = plt.subplots(2,1)
-
-    # -- Parte real del pulso + envolvente --
-    ax[0].plot(t, np.real(pulso), label = r'$\Re \{E(t)\}$')
-    ax[0].plot(t, np.sqrt(I), '--', label = 'Envolvente')
-    ax[0].plot(t, φ_0, '-.', label = r'$\phi (t)$')
-    ax[0].set_xlabel("Tiempo (ps)")
-    ax[0].set_ylabel("Campo / Envolvente (Normalizado)")
-    ax[0].grid()
-    ax[0].legend()
-
-
-    # -- Parte imaginaria del pulso + envolvente --
-    ax[1].plot(t, np.imag(pulso), label = r'$\Im \{E(t)\}$')
-    ax[1].plot(t, np.sqrt(I), '--', label = 'Envolvente')
-    ax[1].plot(t, φ_0, '-.', label = r'$\phi (t)$')
-    ax[1].set_xlabel("Tiempo (ps)")
-    ax[1].set_ylabel("Campo / Envolvente (Normalizado)")
-    ax[1].grid()
-    ax[1].legend()
-
-    fig.suptitle("Partes real e imaginaria del pulso")
-
-    return fig, ax
-
-
-
-
-def plot_intensidad(t, I):
-    """
-    Realiza una representación de la intensidad del pulso frente al tiempo
-
-    Args:
-        t (float, np.array): array de tiempos
-        I (float, np.array): array con la intensidad del pulso en un tiempo t
-
-    Devuelve:
-        tuple(matplotlib Figure, matplotlib Axis)
-    """
-    fig, ax = plt.subplots()
-    ax.plot(t, I)
-    ax.set_xlabel("Tiempo (ps)")
-    ax.set_ylabel("Intensidad")
-    ax.grid()
-    ax.set_title("Intensidad del pulso")
-
-    return fig, ax
-
-
-
 
 def DFT(x):
     """
@@ -354,7 +227,7 @@ def convolucion(x, y):
         x (np.ndarray[np.complex]): array de datos para calcular su convolución con y
         y (np.ndarray[np.complex]): array de datos para calcular su convolución con x
 
-    Returns:
+    Devuelve:
         np.ndarray[np.complex]: convolución entre los dos arrays
     """
     n = x.size
@@ -365,3 +238,21 @@ def convolucion(x, y):
     z = ifft(x_transformada * y_transformada)
 
     return z
+
+
+def convertir_tiempo_frecuencia(numero_de_muestras, Δt):
+    """
+    Crea un array de frecuencias angulares desde cero hasta la frecuencia máxima
+    dada por el número de muestras y espaciado entre las muestras de un array
+    que contiene los tiempos.
+
+    Las unidades del array creado serán rad / unidad de tiempo del array de entrada.
+
+    Args:
+        numero_de_muestras (float): número de muestras temporales
+        Δt (float): separación entre las muestras (inversa de la frecuencia de muestreo)
+
+    Devuelve:
+        np.ndarray: array con las frecuencias angulares (rad / unidad de tiempo)
+    """
+    return 2 * np.pi * np.arange(numero_de_muestras) / (Δt * numero_de_muestras)

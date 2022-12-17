@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.constants as constants
 from time import process_time as timer
-from utils import *
+from core import *
 import scipy.fft
 
 plt.rcParams.update({'font.size': 16}) # Tamaño de la fuente del plot
@@ -41,7 +41,7 @@ def media_tiempo_ejecucion(funcion, pulso, n_repeticiones):
 
 if __name__ == '__main__':
 
-    numero_de_muestras = 2000
+    numero_de_muestras = 4096
 
     # -- Parámetros del pulso --
     A = 1 # Amplitud del pulso

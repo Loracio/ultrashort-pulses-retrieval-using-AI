@@ -38,7 +38,7 @@ function pulso_gaussiano(t, A, τ, ω₀, φ)
 end
 
 
-function DFT(x)
+function DFT(x::Vector{ComplexF64})
     """
     Implementación de la transformada discreta de Fourier (DFT).
 
@@ -72,7 +72,7 @@ end
 
 
 
-function IDFT(x)
+function IDFT(x::Vector{ComplexF64})
     """
     Implementación de la transformada discreta de Fourier (DFT).
 
@@ -240,7 +240,7 @@ end
 
 
 
-function transformada_bluestein(x, signo)
+function transformada_bluestein(x::Vector{ComplexF64}, signo::Int)
     """
     El algoritmo de Bluestein sirve para calcular la FFT de un array cuya longitud no es una potencia de 2. 
     El algoritmo de Bluestein consiste en los siguientes pasos:
@@ -276,7 +276,7 @@ end
 
 
 
-function convolucion(x, y)
+function convolucion(x::Vector{ComplexF64}, y::Vector{ComplexF64})
     """
     Calcula la convolución entre dos arrays de la misma longitud. 
     La convolución en el dominio temporal es igual al producto en

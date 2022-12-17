@@ -2,16 +2,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.fft
 import scipy.constants as constants
-from utils import *
+from core import * 
 
 plt.rcParams.update({'font.size': 16}) # Tamaño de la fuente del plot
 
 
 if __name__ == '__main__':
 
-    numero_de_muestras = 2048
+    # Parámetros de la medida
+    numero_de_muestras = 4096
+    duracion_temporal = 10 # Tiempo total de medida de la señal (ps)
+    frecuencia_muestreo = numero_de_muestras / duracion_temporal
 
     # -- Parámetros del pulso --
+    t0 = 5 # # Tiempo en el que el pulso tiene su máximo (ps)
     A = 1 # Amplitud del pulso
     λ_0 = 1.55 # Longitud de onda de ejemplo (en micrómetros)
     ω_0 = 2 * np.pi * constants.c * 1e-12 / (λ_0 * 1e-6) # Frecuencia angular del pulso (rad / ps)
@@ -19,8 +23,8 @@ if __name__ == '__main__':
     τ = 1 # Duración del pulso (ps)
 
 
-    t, Δt = np.linspace(-5, 5, num=numero_de_muestras, retstep=True) # Vector de tiempos (centrado en cero, ps). Guardamos la separación entre datos
-    pulso = pulso_gaussiano(t, A, τ, ω_0, φ_0) # Vector con el campo complejo del pulso
+    t, Δt = np.linspace(0, duracion_temporal, num=numero_de_muestras, retstep=True) # Vector de tiempos. Guardamos la separación entre datos (inversa de la frecuencia de muestreo)
+    pulso = pulso_gaussiano(t, t0, A, τ, ω_0, φ_0) # Vector con el campo complejo del pulso
     I = np.abs(pulso) * np.abs(pulso) # Vector con la intensidad del pulso
 
     # Plot partes real e imaginaria del pulso
@@ -35,13 +39,14 @@ if __name__ == '__main__':
     plt.show()
 
     # Construimos el array de frecuencias angulares
-    ω = 2 * np.pi * np.arange(numero_de_muestras) / (Δt * numero_de_muestras) # Array de frecuencias angulares (rad / ps)
-    transformada_analitica = transformada_pulso_gaussiano(ω, A, τ, ω_0, φ_0) # Transformada analítica de un pulso gaussiano con fase constante
+    ω = convertir_tiempo_frecuencia(numero_de_muestras, Δt) # Array de frecuencias angulares (rad / ps)
+    transformada_analitica = transformada_pulso_gaussiano(ω, t0, A, τ, ω_0, φ_0) # Transformada analítica de un pulso gaussiano con fase constante
+
 
     # Comprobamos que el hacer su transformada inversa nos devuelve el pulso original
-    plot_real_imag(t, np.fft.ifftshift((ifft(transformada_analitica))), φ_0, np.abs(np.fft.ifftshift((ifft(transformada_analitica))))**2) #! Hay que centrar el pulso en cero al realizar la inversa. Además no recuperamos amplitud original
+    plot_real_imag(t, ifft(transformada_analitica), φ_0, np.abs(ifft(transformada_analitica))**2)
     plt.show()
-    #! No devuelve el pulso original. Hay diferencia en la amplitud y también en la fase
+    #! Problemas con los factores de normalización
 
     # -- Plot : comparación de los resultados obtenidos por np.fft.fft, scipy.fft.fft y mi implementación
     transformada_numpy = np.fft.fft(pulso)
@@ -115,13 +120,11 @@ if __name__ == '__main__':
 
     plt.show()
 
-    # Parece haber un desfase entre las dos señales
-
     # Transformadas de pulsos con distintas anchuras temporales 
     τ_1, τ_2, τ_3 = 2.0, 1.0, 0.5 # En ps
-    pulso_1 = fft(pulso_gaussiano(t, A, τ_1, ω_0, φ_0))
-    pulso_2 = fft(pulso_gaussiano(t, A, τ_2, ω_0, φ_0))
-    pulso_3 = fft(pulso_gaussiano(t, A, τ_3, ω_0, φ_0))
+    pulso_1 = fft(pulso_gaussiano(t, t0, A, τ_1, ω_0, φ_0))
+    pulso_2 = fft(pulso_gaussiano(t, t0, A, τ_2, ω_0, φ_0))
+    pulso_3 = fft(pulso_gaussiano(t, t0, A, τ_3, ω_0, φ_0))
 
     fig, ax = plt.subplots()
     ax.plot(ω, np.abs(pulso_1), label=r"$\tau =$"+f"{τ_1} ps")
