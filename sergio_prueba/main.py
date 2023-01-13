@@ -2,29 +2,28 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.fft
 import scipy.constants as constants
-from core import * 
+from utils import *
 
-plt.rcParams.update({'font.size': 16}) # Tamaño de la fuente del plot
+plt.rcParams.update({'font.size': 10}) # Tamaño de la fuente del plot
 
 
 if __name__ == '__main__':
-
-    # Parámetros de la medida
-    numero_de_muestras = 4096
-    duracion_temporal = 10 # Tiempo total de medida de la señal (ps)
-    frecuencia_muestreo = numero_de_muestras / duracion_temporal
+    A=30
+    numero_de_muestras = A*1024
 
     # -- Parámetros del pulso --
-    t0 = 0 # # Tiempo en el que el pulso tiene su máximo (ps)
     A = 1 # Amplitud del pulso
     λ_0 = 1.55 # Longitud de onda de ejemplo (en micrómetros)
-    ω_0 = 2 * np.pi * constants.c * 1e-12 / (λ_0 * 1e-6) # Frecuencia angular del pulso (rad / ps)
+    ω_0 = 2 * np.pi * constants.c * 1e-12 / (λ_0 * 1e-6) # Frecuencia angular del pulso (rad / ps)    
     φ_0 =  0 * np.ones(numero_de_muestras) # Fase (constante en este caso)
     τ = 1 # Duración del pulso (ps)
 
-
-    t, Δt = np.linspace(-5, 5, num=numero_de_muestras, retstep=True) # Vector de tiempos. Guardamos la separación entre datos (inversa de la frecuencia de muestreo)
-    pulso = pulso_gaussiano(t, t0, A, τ, ω_0, φ_0) # Vector con el campo complejo del pulso
+    to=10*τ
+    t, Δt = np.linspace(0, 20, num=numero_de_muestras, retstep=True) # Vector de tiempos (centrado en cero, ps). Guardamos la separación entre datos
+    print("Δt (ps)=",Δt)
+    fs=1/Δt
+    print("fs=1/Δt sampling rate (1/ps)=",fs)    
+    pulso = pulso_gaussiano(t-to, A, τ, ω_0, φ_0) # Vector con el campo complejo del pulso
     I = np.abs(pulso) * np.abs(pulso) # Vector con la intensidad del pulso
 
     # Plot partes real e imaginaria del pulso
@@ -39,52 +38,74 @@ if __name__ == '__main__':
     plt.show()
 
     # Construimos el array de frecuencias angulares
-    ω = convertir_tiempo_frecuencia(numero_de_muestras, Δt) # Array de frecuencias angulares (rad / ps)
-    Δω = (ω[-1] - ω[0]) / np.size(ω)
-    transformada_analitica = transformada_pulso_gaussiano(ω, t0, A, τ, ω_0, φ_0) # Transformada analítica de un pulso gaussiano con fase constante
-
-
+    ω = 2 * np.pi * np.arange(numero_de_muestras) / (Δt * numero_de_muestras) # Array de frecuencias angulares (rad / ps)
+    
+    ω_i = 0.5*ω_0 # Frecuencia angular del pulso (rad / ps)
+    ω_f = 2.2*ω_0 # Frecuencia angular del pulso (rad / ps)
+    Δω=(ω_f-ω_i)/(numero_de_muestras)
+    print("Frecuency range (rad/ps):",ω_i,ω_f)
+    print("Frecuency range (1/ps):",ω_i/(2.0*np.pi),ω_f/(2.0*np.pi))
+    fmax=ω_f/(2.0*np.pi)
+    print("fmax (1/ps)",fmax)
+    print("fs>2fmax",fs>2*fmax)
+    
+    print(2 * np.pi / Δt,2 * np.pi /(numero_de_muestras* Δt))
+    ω2 = ω_i +Δω*np.arange(numero_de_muestras) # Array de frecuencias angulares (rad / ps)
+    
+    transformada_analitica = transformada_pulso_gaussiano(ω2, A, τ, ω_0, φ_0) # Transformada analítica de un pulso gaussiano con fase constante
+     
     # Comprobamos que el hacer su transformada inversa nos devuelve el pulso original
-    plot_real_imag(t, IDFT_naive(transformada_analitica, t, Δt, ω, Δω), φ_0, np.abs(IDFT_naive(transformada_analitica, t, Δt, ω, Δω))**2)
+    plot_real_imag(t, np.fft.ifftshift((ifft(transformada_analitica))), φ_0, np.abs(np.fft.ifftshift((ifft(transformada_analitica))))**2) #! Hay que centrar el pulso en cero al realizar la inversa. Además no recuperamos amplitud original    
     plt.show()
-    #! Problemas con los factores de normalización
+    #! No devuelve el pulso original. Hay diferencia en la amplitud y también en la fase
 
     # -- Plot : comparación de los resultados obtenidos por np.fft.fft, scipy.fft.fft y mi implementación
-    transformada_numpy = np.fft.fft(pulso)
-    transformada_scipy = scipy.fft.fft(pulso)
-    transformada_propia = fft(pulso)
-
-    diferencias_numpy = np.abs(transformada_numpy - transformada_propia) * 1e13
-    diferencias_scipy = np.abs(transformada_scipy - transformada_propia) * 1e13
-    diferencias_ambos = np.abs(transformada_scipy - transformada_numpy) * 1e13
-
+    # transformada_numpy = np.fft.fft(pulso)
+    # transformada_scipy = scipy.fft.fft(pulso)
+    transformada_propia = DFT_sgr(pulso,ω2,t,Δt,Δω)   
+    transformaeda_propia_inv=inv_DFT_sgr(transformada_propia,ω2,t,Δt,Δω) 
+    
+    # Comprobamos que el hacer la transformada y su inversa nos devuelve el pulso original
+    plot_real_imag(t, transformaeda_propia_inv, φ_0, np.abs(transformaeda_propia_inv)**2)
+    plt.show()
+    
+    diferencias_numpy = np.abs(transformada_numpy) #* 1e13
+    diferencias_scipy = np.abs(transformada_analitica) #* 1e13
+    diferencias_ambos = np.abs(transformada_propia) #* 1e13f
+    print(diferencias_scipy.shape)
+    print(diferencias_ambos)
     fig, ax = plt.subplots(3, 1)
-    ax[0].plot(ω, diferencias_numpy, label='Diferencia con NumPy')
-    ax[1].plot(ω, diferencias_scipy, label='Diferencia con SciPy', color='orange')
-    ax[2].plot(ω, diferencias_ambos, label='Diferencia entre NumPy y SciPy', color='green')
+    ax[0].plot(ω, diferencias_numpy, label='TF NumPy',marker='o',linewidth=0.5, markersize=2)
+    ax[1].plot(ω2, diferencias_scipy, label='TF analítica', color='orange',marker='o',linewidth=0.5, markersize=2)
+    ax[2].plot(ω2, diferencias_ambos, label='TF DFT', color='green',marker='o',linewidth=0.5, markersize=2)
     fig.suptitle("Comprobación valores obtenidos con las distintas funciones")
     fig.supxlabel("ω (rad / ps)")
-    fig.supylabel(r"Diferencia entre valores ($\times 10^{-13}$)")
+    fig.supylabel(r"Diferencia entre valores") #" ($\times 10^{-13}$)")
     ax[0].grid()
     ax[1].grid()
     ax[2].grid()
     ax[0].legend()
     ax[1].legend()
     ax[2].legend()
-
+    
+    for i in range(0,3):
+        ax[i].set_xlim(1200,1240)
+      
+ 
     plt.show()
-
+    
+    '''
 
     # -- Plot : comparación de los resultados obtenidos por fft y DFT
     transformada_DFT = DFT(pulso)
 
-    diferencias_DFT_fft = np.abs(transformada_propia - transformada_DFT) * 1e10
+    diferencias_DFT_fft = np.abs(transformada_propia - transformada_DFT) #* 1e10
 
     fig, ax = plt.subplots()
     ax.plot(ω, diferencias_DFT_fft)
     fig.suptitle("Comprobación valores obtenidos con fft y DFT")
     fig.supxlabel("ω (rad / ps)")
-    fig.supylabel(r"Diferencia entre valores ($\times 10^{-10}$)")
+    fig.supylabel(r"Diferencia entre valores") #" ($\times 10^{-10}$)")
     ax.grid()
 
     plt.show()
@@ -121,11 +142,13 @@ if __name__ == '__main__':
 
     plt.show()
 
+    # Parece haber un desfase entre las dos señales
+
     # Transformadas de pulsos con distintas anchuras temporales 
     τ_1, τ_2, τ_3 = 2.0, 1.0, 0.5 # En ps
-    pulso_1 = fft(pulso_gaussiano(t, t0, A, τ_1, ω_0, φ_0))
-    pulso_2 = fft(pulso_gaussiano(t, t0, A, τ_2, ω_0, φ_0))
-    pulso_3 = fft(pulso_gaussiano(t, t0, A, τ_3, ω_0, φ_0))
+    pulso_1 = fft(pulso_gaussiano(t, A, τ_1, ω_0, φ_0))
+    pulso_2 = fft(pulso_gaussiano(t, A, τ_2, ω_0, φ_0))
+    pulso_3 = fft(pulso_gaussiano(t, A, τ_3, ω_0, φ_0))
 
     fig, ax = plt.subplots()
     ax.plot(ω, np.abs(pulso_1), label=r"$\tau =$"+f"{τ_1} ps")
@@ -138,3 +161,4 @@ if __name__ == '__main__':
     ax.legend()
     # Vemos que se cumple que a mayor anchura temporal menor anchura espectral
     plt.show()
+    '''
