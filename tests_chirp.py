@@ -4,7 +4,7 @@ import scipy.constants as constants
 from core import * 
 from matplotlib.widgets import Slider
 
-plt.rcParams.update({'font.size': 16}) # Tamaño de la fuente del plot
+plt.rcParams.update({'font.size': 14}) # Tamaño de la fuente del plot
 
 
 if __name__ == '__main__':
@@ -15,41 +15,39 @@ if __name__ == '__main__':
         E(t) = A₀ * exp(-(t - t₀)² / 2*τ²) * exp(i * ( ω_0 * t + φ(t) ) )
 
     Tiene una fase φ(t) dada por:
-        φ(t) = a·t²/τ²
+        φ(t) = a·(t-t₀)²/τ²
 
     Donde 'a' es el parámetro de 'chirp'
     """
 
-    # Parámetros de la medida: escojo unos que permitan tener buena resolución en frecuencias
-    numero_de_muestras = 8 * 4096
-    duracion_temporal = 4 * 20 # Tiempo total de medida de la señal (ps)
+    # Parámetros de la medida
+    numero_de_muestras = 6 * 4096
+    duracion_temporal = 4 * 10 # Tiempo total de medida de la señal (ps)
     frecuencia_muestreo = numero_de_muestras / duracion_temporal # En THz
 
-    t, Δt = np.linspace(0, duracion_temporal, num=numero_de_muestras, retstep=True) # Vector de tiempos. Guardamos la separación entre datos (inversa de la frecuencia de muestreo)
+    t, Δt = np.linspace(0, duracion_temporal, num=numero_de_muestras, retstep=True) # Vector de tiempos (centrado en cero). Guardamos la separación entre datos (inversa de la frecuencia de muestreo)
     # Construimos las frecuencias con la restricción del Tma Nyquist y la relación de reciprocidad.
     frecuencias = frecuencias_DFT(numero_de_muestras, Δt) # Nos lo devuelve en unidades de 1/ps (THz)
     ω = convertir(frecuencias, 'frecuencia', 'frecuencia angular') # Convertimos a rad / ps para utilizar la función DFT
     Δω = 2 * np.pi / (numero_de_muestras * Δt) # Relación de reciprocidad Δt Δω = 2π/N
 
     # -- Parámetros del pulso --
-    t0 = 10 # # Tiempo en el que el pulso tiene su máximo (ps)
+    t0 = 5 # # Tiempo en el que el pulso tiene su máximo (ps)
     A = 1 # Amplitud del pulso
     λ_0 = 1.55 # Longitud de onda de ejemplo (en micrómetros)
     ω_0 = 2 * np.pi * constants.c * 1e-12 / (λ_0 * 1e-6) # Frecuencia angular del pulso (rad / ps)
     τ = 2 # Duración del pulso (ps)
-    a = 1.5 # Parámetro de chirp del pulso 
-    φ =  a * t * t / (τ * τ) # Chirpeo lineal
+    a = 3 * np.pi / 4 # Parámetro de chirp del pulso 
+    φ =  a * (t - t0) * (t - t0) / (τ * τ) # Chirpeo lineal
 
     """
     Comprobamos que se cumple el teorema de muestreo. Es decir, que la frecuencia de muestreo es mayor que 
     el doble de la frecuencia máxima de la señal.
-
-    ¡Atención! Ahora la fase añade una componente a la frecuencia de la señal que habrá que tener en cuenta.
     """
 
     print(f"Frecuencia de muestreo: {frecuencia_muestreo} [THz]")
-    print(f"Frecuencia máxima de la señal: {(convertir(ω_0 + a * duracion_temporal / (τ * τ), 'frecuencia angular', 'frecuencia'))} [THz]")
-    if frecuencia_muestreo/2 > (convertir(ω_0 + a * duracion_temporal / (τ*τ), 'frecuencia angular', 'frecuencia')):
+    print(f"Frecuencia máxima de la señal: {(convertir(ω_0 + 2 * a * duracion_temporal / (τ * τ), 'frecuencia angular', 'frecuencia'))} [THz]")
+    if frecuencia_muestreo/2 > (convertir(ω_0 + 2 * a * duracion_temporal / (τ * τ), 'frecuencia angular', 'frecuencia')):
         print("Se cumple el teorema de Nyquist")
     else:
         print("¡Atención! No se cumple el teorema de muestreo de Nyquist")
@@ -58,19 +56,19 @@ if __name__ == '__main__':
     Podemos calcular la transformada analítica de un pulso Gaussiano con un 'chirpeo' lineal.
     Vendrá dada por:
 
-        Ẽ(ω) = A₀ * τ sqrt(2π) / (sqrt(1 - 2 * i * a)) * exp(- (2 * a * t₀² + τ² * (ω₀ - ω) * (2t₀ + i * τ * (ω₀ - ω)) ) / (2τ² * (2 * a + i)) )
+        Ẽ(ω) = A₀ * τ sqrt(2π) / (sqrt(1 - 2 * i * a)) * exp(- (1j * (ω - ω_0) * (τ * τ  * (ω - ω_0) + (4 * a + 2 * i) * t₀)) / (4 * a + 2i) )
     """
 
     def transformada_pulso_chirpeado_linealmente(ω, t0, A, τ, ω_0, a):
         """
         Transformada analítica de un pulso Gaussiano con un 'chirpeo' lineal, es decir,
         que la fase venga dada por:
-            φ(t) = a·t²/τ²
+            φ(t) = a·(t-t₀)²/τ²
 
         Donde 'a' es el parámetro del chirp.
 
         La transformada vendrá dada por:
-            Ẽ(ω) = A₀ * τ sqrt(2π) / (sqrt(1 - 2 * i * a)) * exp(- (2 * a * t₀² + τ² * (ω₀ - ω) * (2t₀ + i * τ * (ω₀ - ω)) ) / (2τ² * (2 * a + i)) )
+            Ẽ(ω) = A₀ * τ sqrt(2π) / (sqrt(1 - 2 * i * a)) * exp(- (1j * (ω - ω_0) * (τ * τ  * (ω - ω_0) + (4 * a + 2 * i) * t₀)) / (4 * a + 2i) )
         
         Las unidades han de ser consistentes entre ω, t0, τ y ω_0.
 
@@ -85,7 +83,7 @@ if __name__ == '__main__':
         Devuelve:
             np.array: array de los valores de la transformada de Fourier en las frecuencias dadas
         """
-        return A * τ * np.sqrt(2 * np.pi) / np.sqrt(1 - 2j * a) * np.exp(- (2 * a * t0*t0 + τ * τ * (ω_0 - ω) * (2 * t0 + 1j * τ * τ * (ω_0 - ω)) ) / (2 * τ * τ * (2 * a + 1j)))
+        return A * τ * np.sqrt(2 * np.pi) / np.sqrt(1 - 2j * a) * np.exp(- (1j * (ω - ω_0) * (τ * τ  * (ω - ω_0) + (4 * a + 2 * 1j) * t0)) / (4 * a + 2j))
 
 
     pulso = pulso_gaussiano(t, t0, A, τ, ω_0, φ) # Vector con el campo complejo del pulso
@@ -104,19 +102,22 @@ if __name__ == '__main__':
     chirpeado linealmente. Será:
         Δν = 0.375 / τ * sqrt(1 + a²)
 
+    /!\ Tengo que comprobar esta relación, la he cogido tal cual del pdf y puede que haya cosas
+    que sean distintas, porque el resultado no está siendo el esperado
+
     Para comprobarlo, representaremos en el gráfico esta anchura visualmente, y veremos
     'a ojo' si coincide.
     """
     
     fig, ax = plt.subplots(3,1)
 
-    def update_a(valor):
+    def update_parametro(valor):
         """
         Función que actualiza los valores de la representación cuando se cambia el valor
         de 'a' utilizando el slider.
         """
         a = valor
-        φ =  a * t * t / (τ * τ) # Chirpeo lineal
+        φ =  a * (t - t0) * (t - t0) / (τ * τ) # Chirpeo lineal
 
         pulso = pulso_gaussiano(t, t0, A, τ, ω_0, φ) # Vector con el campo complejo del pulso
         transformada_analitica = transformada_pulso_chirpeado_linealmente(ω, t0, A, τ, ω_0, a) # Transformada analítica de un pulso gaussiano con fase constante
@@ -132,12 +133,14 @@ if __name__ == '__main__':
         # Calculamos la anchura espectral a ver si se cumple la relacion:
         anchura_espectral_teorica = 0.375 / τ * np.sqrt(1 + a*a)
         x_vals = [frecuencias[np.argmax(np.abs(transformada_analitica))] - anchura_espectral_teorica, frecuencias[np.argmax(np.abs(transformada_analitica))] + anchura_espectral_teorica]
-        y_vals = [np.amax(np.abs(transformada_analitica)/np.exp(1)), np.amax(np.abs(transformada_analitica)/np.exp(1))]
+        y_vals = [np.amax(np.abs(transformada_analitica)/2), np.amax(np.abs(transformada_analitica)/2)]
         line6.set_xdata(x_vals)
-        line6.set_ydata(x_vals)
+        line6.set_ydata(y_vals)
+        line7.set_xdata(x_vals)
+        line7.set_ydata(y_vals)
 
-    slider_a = Slider(plt.axes([0.15, 0.025, 0.65, 0.03]), "Parámetro de chirp", 0, 2*np.pi, valstep=0.1, valinit=a, initcolor='none')
-    slider_a.on_changed(update_a)
+    slider_a = Slider(plt.axes([0.15, 0.025, 0.65, 0.03]), "Parámetro de chirp", -2*np.pi, 2*np.pi, valstep=0.01, valinit=a, initcolor='none')
+    slider_a.on_changed(update_parametro)
     
 
     line0, = ax[0].plot(frecuencias, np.abs(transformada_analitica), '-', label='Transformada analítica')
@@ -145,21 +148,22 @@ if __name__ == '__main__':
     ax[0].set_title('Valor absoluto del coeficiente')
     ax[0].grid()
     ax[0].legend()
-    ax[0].set_xlim(192,205)
+    ax[0].set_xlim(185,205)
     ax[0].set_ylim(-6,6)
 
     # Flecha de la anchura espectral
     anchura_espectral_teorica = 0.375 / τ * np.sqrt(1 + a*a)
     x_vals = [frecuencias[np.argmax(np.abs(transformada_analitica))] - anchura_espectral_teorica, frecuencias[np.argmax(np.abs(transformada_analitica))] + anchura_espectral_teorica]
     y_vals = [np.amax(np.abs(transformada_analitica)/np.exp(1)), np.amax(np.abs(transformada_analitica)/np.exp(1))]
-    line6, = ax[0].plot(x_vals, y_vals, 'bo', color='black')
+    line6, = ax[0].plot(x_vals, y_vals, '.', color='black')
+    line7, = ax[0].plot(x_vals, y_vals, '--', color='black')
 
     line2, = ax[1].plot(frecuencias, np.real(transformada_analitica), '-', label='Transformada analítica')
     line3, = ax[1].plot(frecuencias, np.real(transformada_numerica), '--', label='Transformada numérica')
     ax[1].set_title('Parte real')
     ax[1].grid()
     ax[1].legend()
-    ax[1].set_xlim(192,205)
+    ax[1].set_xlim(185,205)
     ax[1].set_ylim(-6,6)
 
     line4, = ax[2].plot(frecuencias, np.imag(transformada_analitica), '-', label='Transformada analítica')
@@ -167,7 +171,7 @@ if __name__ == '__main__':
     ax[2].set_title('Parte imaginaria')
     ax[2].grid()
     ax[2].legend()
-    ax[2].set_xlim(192,205)
+    ax[2].set_xlim(185,205)
     ax[2].set_ylim(-6,6)
 
     ax[2].set_xlabel('Frecuencia (THZ)')
