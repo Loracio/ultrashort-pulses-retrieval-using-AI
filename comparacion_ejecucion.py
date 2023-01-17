@@ -1,3 +1,8 @@
+"""
+Script 'chapucero' para realizar pruebas de tiempos de ejecución de las distintas 
+funciones que realizan transformadas de Fourier.
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.constants as constants
@@ -46,20 +51,39 @@ if __name__ == '__main__':
     # -- Parámetros del pulso --
     A = 1 # Amplitud del pulso
     λ_0 = 1.55 # Longitud de onda de ejemplo (en micrómetros)
+    t0 = 0
     ω_0 = 2 * np.pi * constants.c * 1e-12 / (λ_0 * 1e-6) # Frecuencia angular del pulso (rad / ps)
-    φ_0 = np.array([np.pi / 4 for i in range(numero_de_muestras)]) # Fase (constante en este caso)
+    φ_0 = np.pi / 4 # Fase (constante en este caso)
     τ = 1 # Duración del pulso (ps)
 
-    t = np.linspace(-5, 5, num=numero_de_muestras) # Vector de tiempos (centrado en cero, ps)
-    pulso = pulso_gaussiano(t, A, τ, ω_0, φ_0) # Vector con el campo complejo del pulso
+    t, Δt = np.linspace(-5, 5, num=numero_de_muestras, retstep=True) # Vector de tiempos (centrado en cero, ps)
+    pulso = pulso_gaussiano(t, t0, A, τ, ω_0, φ_0) # Vector con el campo complejo del pulso
 
-    n_repeticiones = 10000
+    n_repeticiones = 100
 
-    tiempo_DFT, std_DFT = media_tiempo_ejecucion(DFT, pulso, n_repeticiones)
+    frecuencias = frecuencias_DFT(numero_de_muestras, Δt)
+    ω = convertir(frecuencias, 'frecuencia', 'frecuencia angular')
+    Δω = 2 * np.pi / (numero_de_muestras * Δt)
+
+    tiempo_DFT, std_DFT = media_tiempo_ejecucion(DFT_clasica, pulso, n_repeticiones)
     print(f"timing DFT: {tiempo_DFT:<.5f} ± {std_DFT:<.5f} μs")
 
     tiempo_fft_propia, std_fft_propia = media_tiempo_ejecucion(fft, pulso, n_repeticiones)
     print(f"timing fft propia: {tiempo_fft_propia:<.5f} ± {std_fft_propia:<.5f} μs")
+
+    tiempos = np.empty(n_repeticiones)
+
+    for i in range(n_repeticiones):
+        tic = timer()
+        DFT(pulso, t, Δt, ω, Δω)
+        toc = timer()
+        tiempos[i] = toc-tic
+
+    tiempos *= 1e6 # pasar a µs
+
+    tiempo_DFT_fase   = np.mean(tiempos)
+    std_DFT_fase = np.std(tiempos)
+    print(f"timing DFT factores de fase: {tiempo_DFT_fase:<.5f} ± {std_DFT_fase:<.5f} μs")
 
     tiempo_fft_numpy, std_fft_numpy = media_tiempo_ejecucion(np.fft.fft, pulso, n_repeticiones)
     print(f"timing fft numpy: {tiempo_fft_numpy:<.5f} ± {std_fft_numpy:<.5f} μs")

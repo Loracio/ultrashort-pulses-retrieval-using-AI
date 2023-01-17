@@ -190,3 +190,4 @@ dkms.conf
 
 # vs code
 .vscode
+test.py

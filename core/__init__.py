@@ -5,6 +5,7 @@ except NameError:
 
 if not __CORE_MODULE_IMPORTED__:
     from .fourier import *
-    from .funciones_plots import *
-    from .utils import *
+    from .graficos import *
+    from .unidades import *
+    from .utiles import *
 __CORE_MODULE_IMPORTED__ = True
