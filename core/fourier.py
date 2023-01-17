@@ -42,6 +42,12 @@ def DFT(E, t, Δt, ω, Δω):
 
     Y no nos tendremos que preocupar de shiftear el resultado.
 
+    Debemos de tener en cuenta el teorema de muestreo de Nyquist, que establece que para evitar el
+    efecto de 'aliasing' deberemos descartar todas frecuencias mayores a la mitad de la frecuencia
+    de muestreo, dada por fₘ = 1 / Δt. Así el array de frecuencias habrá de ser equiespaciado entre
+    -ωₘ/2 = -π/Δt y ωₘ/2 = π/Δt con Δω = 2π/(NΔt). Si el array de frecuencias no cumple esta relación,
+    tendremos problemas al saltar entre dominios.
+
     Args:
         E (np.ndarray[np.complex]): array de datos con la información temporal
         t (np.ndarray): array de tiempos equiespaciados Δt
@@ -96,6 +102,8 @@ def IDFT(Ẽ, t, Δt, ω, Δω):
     Podemos expresar finalmente la transformada inversa discrezitada como:
         Eⱼ = 1/Δt·sⱼ* · 1/N ∑ₙ₌₀ᴺ⁻¹ Ẽₙ·rₙ* e^{i 2π n j / N}
 
+    Donde * denota complejo conjugado.
+
     De manera que podemos denotar:
         IDFTⱼ = 1/N ∑ₙ₌₀ᴺ⁻¹ Ẽₙ' e^{i 2π n j / N}
 
@@ -108,6 +116,12 @@ def IDFT(Ẽ, t, Δt, ω, Δω):
          Eⱼ = 1/Δt·sⱼ* · ifft(Ẽₙ·rₙ*)
     
     Y no nos tendremos que preocupar de shiftear el resultado.
+
+    Debemos de tener en cuenta el teorema de muestreo de Nyquist, que establece que para evitar el
+    efecto de 'aliasing' deberemos descartar todas frecuencias mayores a la mitad de la frecuencia
+    de muestreo, dada por fₘ = 1 / Δt. Así el array de frecuencias habrá de ser equiespaciado entre
+    -ωₘ/2 = -π/Δt y ωₘ/2 = π/Δt con Δω = 2π/(NΔt). Si el array de frecuencias no cumple esta relación,
+    tendremos problemas al saltar entre dominios.
 
     Args:
         Ẽ (np.ndarray[np.complex]): array de datos con la información frecuencial
@@ -132,7 +146,7 @@ def IDFT(Ẽ, t, Δt, ω, Δω):
     return s_j_conj / Δt * ifft(Ẽ * r_n_conj)
 
 
-def DFT_naive(x):
+def DFT_clasica(x):
     """
     Implementación de la transformada discreta de Fourier (DFT) con la convención comúnmente empleada:
         Fₙ = ∑₀ᴺ⁻¹ fₖ e^{-i 2π k n / N}
@@ -156,7 +170,7 @@ def DFT_naive(x):
     return np.dot(e,x)
 
 
-def IDFT_naive(x):
+def IDFT_clasica(x):
     """
     Implementación de la transformada discreta de Fourier (IDFT) con la convención comúnmente empleada:
         fₖ = 1 / N · ∑₀ᴺ⁻¹ Fₙ e^{i 2π k n / N}

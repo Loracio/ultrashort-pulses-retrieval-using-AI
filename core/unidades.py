@@ -23,40 +23,40 @@ función dependiendo de la conversión deseada.
 import numpy as np
 import scipy.constants as constants
 
-def longitudOnda_frecuenciaAngular(λ):
+def _longitudOnda_frecuenciaAngular(λ):
     return 2 * np.pi * constants.c / λ
 
-def longitudOnda_frecuencia(λ):
+def _longitudOnda_frecuencia(λ):
     return constans.c / λ
 
-def longitudOnda_vectorOndas(λ):
+def _longitudOnda_vectorOndas(λ):
     return 2 * np.pi / λ
 
-def frecuenciaAngular_longitudOnda(ω):
+def _frecuenciaAngular_longitudOnda(ω):
     return 2 * np.pi * constants.c / ω
 
-def frecuenciaAngular_frecuencia(ω):
+def _frecuenciaAngular_frecuencia(ω):
     return ω / (2 * np.pi)
 
-def frecuenciaAngular_vectorOndas(ω):
+def _frecuenciaAngular_vectorOndas(ω):
     return ω / constants.c
 
-def frecuencia_longitudOnda(f):
+def _frecuencia_longitudOnda(f):
     return constants.c / f
 
-def frecuencia_frecuenciaAngular(f):
+def _frecuencia_frecuenciaAngular(f):
     return 2 * np.pi * f
 
-def frecuencia_vectorOndas(f):
+def _frecuencia_vectorOndas(f):
     return 2*np.pi * f / constants.c
 
-def vectorOndas_longitudOnda(k):
+def _vectorOndas_longitudOnda(k):
     return 2 * np.pi / k
 
-def vectorOndas_frecuenciaAngular(k):
+def _vectorOndas_frecuenciaAngular(k):
     return k * constants.c
 
-def vectorOndas_frecuencia(k):
+def _vectorOndas_frecuencia(k):
     return k * constants.c / (2 * np.pi)
 
 alias = {
@@ -75,29 +75,29 @@ alias = {
 selector = {
     'λ' : {
         'λ': lambda x: copy(x),
-        'ω': longitudOnda_frecuenciaAngular,
-        'f': longitudOnda_frecuencia,
-        'k': longitudOnda_vectorOndas
+        'ω': _longitudOnda_frecuenciaAngular,
+        'f': _longitudOnda_frecuencia,
+        'k': _longitudOnda_vectorOndas
     },
 
     'ω': {
-        'λ': frecuenciaAngular_longitudOnda,
+        'λ': _frecuenciaAngular_longitudOnda,
         'ω': lambda x: copy(x),
-        'f': frecuenciaAngular_frecuencia,
-        'k': frecuenciaAngular_vectorOndas
+        'f': _frecuenciaAngular_frecuencia,
+        'k': _frecuenciaAngular_vectorOndas
     },
 
     'f': {
-        'λ': frecuencia_longitudOnda,
-        'ω': frecuencia_frecuenciaAngular,
+        'λ': _frecuencia_longitudOnda,
+        'ω': _frecuencia_frecuenciaAngular,
         'f': lambda x: copy(x),
-        'k': frecuencia_vectorOndas
+        'k': _frecuencia_vectorOndas
     },
 
     'k': {
-        'λ': vectorOndas_longitudOnda,
-        'ω': vectorOndas_frecuenciaAngular,
-        'f': vectorOndas_frecuencia,
+        'λ': _vectorOndas_longitudOnda,
+        'ω': _vectorOndas_frecuenciaAngular,
+        'f': _vectorOndas_frecuencia,
         'k': lambda x: copy(x)
     },
 }
