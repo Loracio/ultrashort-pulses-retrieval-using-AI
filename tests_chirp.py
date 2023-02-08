@@ -131,8 +131,8 @@ if __name__ == '__main__':
         line5.set_ydata(np.imag(transformada_numerica))
 
         # Calculamos la anchura espectral a ver si se cumple la relacion:
-        anchura_espectral_teorica = 0.375 / τ * np.sqrt(1 + a*a)
-        x_vals = [frecuencias[np.argmax(np.abs(transformada_analitica))] - anchura_espectral_teorica, frecuencias[np.argmax(np.abs(transformada_analitica))] + anchura_espectral_teorica]
+        anchura_espectral_teorica = np.sqrt((4*a*a + 1) * 2 * np.log(2)) / τ # rad/unidad tiempo
+        x_vals = [convertir(ω_0 - anchura_espectral_teorica, 'frecuencia angular', 'frecuencia'), convertir(ω_0 + anchura_espectral_teorica, 'frecuencia angular', 'frecuencia')]
         y_vals = [np.amax(np.abs(transformada_analitica)/2), np.amax(np.abs(transformada_analitica)/2)]
         line6.set_xdata(x_vals)
         line6.set_ydata(y_vals)
@@ -145,18 +145,17 @@ if __name__ == '__main__':
 
     line0, = ax[0].plot(frecuencias, np.abs(transformada_analitica), '-', label='Transformada analítica')
     line1, = ax[0].plot(frecuencias, np.abs(transformada_numerica), '--', label='Transformada numérica')
+    # Flecha de la anchura espectral
+    anchura_espectral_teorica = np.sqrt((4*a*a + 1) * 2 * np.log(2)) / τ # rad unidad tiempo
+    x_vals = [convertir(ω_0 - anchura_espectral_teorica, 'frecuencia angular', 'frecuencia'), convertir(ω_0 + anchura_espectral_teorica, 'frecuencia angular', 'frecuencia')]
+    y_vals = [np.amax(np.abs(transformada_analitica)/2), np.amax(np.abs(transformada_analitica)/2)]
+    line6, = ax[0].plot(x_vals, y_vals, '.', color='black')
+    line7, = ax[0].plot(x_vals, y_vals, '--', color='black', label="Anchura a media altura")
     ax[0].set_title('Valor absoluto del coeficiente')
     ax[0].grid()
     ax[0].legend()
     ax[0].set_xlim(185,205)
     ax[0].set_ylim(-6,6)
-
-    # Flecha de la anchura espectral
-    anchura_espectral_teorica = 0.375 / τ * np.sqrt(1 + a*a)
-    x_vals = [frecuencias[np.argmax(np.abs(transformada_analitica))] - anchura_espectral_teorica, frecuencias[np.argmax(np.abs(transformada_analitica))] + anchura_espectral_teorica]
-    y_vals = [np.amax(np.abs(transformada_analitica)/np.exp(1)), np.amax(np.abs(transformada_analitica)/np.exp(1))]
-    line6, = ax[0].plot(x_vals, y_vals, '.', color='black')
-    line7, = ax[0].plot(x_vals, y_vals, '--', color='black')
 
     line2, = ax[1].plot(frecuencias, np.real(transformada_analitica), '-', label='Transformada analítica')
     line3, = ax[1].plot(frecuencias, np.real(transformada_numerica), '--', label='Transformada numérica')
