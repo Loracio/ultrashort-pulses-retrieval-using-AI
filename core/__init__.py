@@ -4,6 +4,7 @@ except NameError:
     __CORE_MODULE_IMPORTED__= False
 
 if not __CORE_MODULE_IMPORTED__:
+    from .autocorrelaciones import *
     from .fourier import *
     from .graficos import *
     from .unidades import *
