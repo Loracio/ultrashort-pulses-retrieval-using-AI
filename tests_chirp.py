@@ -100,10 +100,11 @@ if __name__ == '__main__':
 
     Vamos a comprobar si se cumple la relación teórica de la anchura espectral para el pulso
     chirpeado linealmente. Será:
-        Δν = 0.375 / τ * sqrt(1 + a²)
+        Δω = 2 * sqrt(2 * (4 + a²) * log(2)) / τ
+        Δf = 0.375 / τ  * sqrt(4 + a²)
 
-    /!\ Tengo que comprobar esta relación, la he cogido tal cual del pdf y puede que haya cosas
-    que sean distintas, porque el resultado no está siendo el esperado
+    /!\ Esta relación es para el valor absoluto de los coeficientes de la transformada de Fourier,
+    no para la intensidad espectral
 
     Para comprobarlo, representaremos en el gráfico esta anchura visualmente, y veremos
     'a ojo' si coincide.
