@@ -23,8 +23,8 @@ if __name__ == '__main__':
     """
 
     # Parámetros de la medida
-    numero_de_muestras = 2 * 4096
-    duracion_temporal = 2 * 10 # Tiempo total de medida de la señal (ps)
+    numero_de_muestras = 4 * 4096
+    duracion_temporal = 4 * 10 # Tiempo total de medida de la señal (ps)
     frecuencia_muestreo = numero_de_muestras / duracion_temporal # En THz
 
     t, Δt = np.linspace(-duracion_temporal/2, duracion_temporal/2, num=numero_de_muestras, retstep=True) # Vector de tiempos. Guardamos la separación entre datos (inversa de la frecuencia de muestreo)
@@ -48,7 +48,7 @@ if __name__ == '__main__':
         print("¡Atención! No se cumple el teorema de muestreo de Nyquist")
 
     # Definimos el aray de los delays (es igual que el de tiempos)
-    delays = np.linspace(-duracion_temporal/2, duracion_temporal/2, num=numero_de_muestras)
+    delays = np.linspace(-duracion_temporal, duracion_temporal, num=numero_de_muestras)
 
     """
     Ejemplos de autocorrelación de segundo orden:
@@ -151,7 +151,7 @@ if __name__ == '__main__':
     Ejemplos cálculo autocorrelación "FRAC".
     """
 
-    # Representación de la intensidad del pulso con su correspondiente autocorrelación de tercer orden
+    # Representación de la intensidad del pulso con su correspondiente autocorrelación "FRAC"
     fig, ax = plt.subplots(2, 2)
     ax[0][0].plot(t, np.abs(pulso)**2, label='Pulso')
     ax[0][0].set_xlabel("Tiempo (ps)")
@@ -177,6 +177,154 @@ if __name__ == '__main__':
     ax[1][1].grid()
     ax[1][1].legend()
 
-    fig.suptitle("Autocorrelación de tercer orden")
+    fig.suptitle("Autocorrelación \"FRAC\"")
+
+    plt.show()
+
+
+    """
+    En el cap 6 de Trebino ("Measurement of Ultrashort Laser Pulses") se enseña en la página 10
+    como pulsos con intensidad distinta pueden presentar la misma figura de autocorrelación de
+    segundo orden. En concreto, un pulso de con intensidad:
+
+        I(t) = 0 si t < 0
+        I(t) = exp{-βt} si t ≥ 0 (con β > 0)
+
+    Presenta la misma autocorrelación de segundo orden que uno definido como:
+        I(t) = 0 si t < 0
+        I(t) = exp{-βt} * ( 1 - 4β/α * sen(αt) + 4β²/α² (1 - cos(αt)))
+
+    Con |4β/α| < 1.
+
+    Vamos a comprobarlo:
+    """
+
+    def calcula_intensidad_ejemplo(t, β, α=None):
+        if α is not None:
+            return np.exp(-β * t) * ( 1 - 4* β / α * np.sin(α * t) + 4 * β * β/ (α * α) *  (1 - np.cos(α *t)) )
+        else:
+            return np.exp(-β * t)
+
+    def intensidad_ejemplo(t, β, α=None):
+        return np.piecewise(t, [t < 0, t >= 0], [0, calcula_intensidad_ejemplo], β, α)
+
+    
+    t, Δt = np.linspace(-5, 60, num=4096, retstep=True)
+    delays = np.linspace(-60, 60, num=4096)
+    β = 0.1
+    α = 1.6
+
+    exponencial_decreciente = intensidad_ejemplo(t, β)
+    alias_1 = intensidad_ejemplo(t, β, α)
+    alias_2 = intensidad_ejemplo(t, β, α/2)
+    alias_3 = intensidad_ejemplo(t, β, α/4)
+
+    # Representación de la intensidad de los pulsos con misma autocorrelación de segundo orden
+    fig, ax = plt.subplots(4, 2)
+    ax[0][0].plot(t, exponencial_decreciente, label='Pulso')
+    ax[0][0].set_xlabel("Tiempo (ps)")
+    ax[0][0].set_ylabel("Intensidad (u.a.)")
+    ax[0][0].grid()
+    ax[0][0].legend()
+
+    ax[0][1].plot(delays, autocorrelacion_2orden(delays, Δt, intensidad_ejemplo, t, β), label=r'$A^{(2)}(\tau)$')
+    ax[0][1].set_xlabel("Retardo (ps)")
+    ax[0][1].set_ylabel("Intensidad (u.a.)")
+    ax[0][1].grid()
+    ax[0][1].legend()
+
+    ax[1][0].plot(t, alias_1, color='r', label='Pulso')
+    ax[1][0].set_xlabel("Tiempo (ps)")
+    ax[1][0].set_ylabel("Intensidad (u.a.)")
+    ax[1][0].grid()
+    ax[1][0].legend()
+
+    ax[1][1].plot(delays, autocorrelacion_2orden(delays, Δt, intensidad_ejemplo, t, β, α), color='r', label=r'$A^{(2)}(\tau)$')
+    ax[1][1].set_xlabel("Retardo (ps)")
+    ax[1][1].set_ylabel("Intensidad (u.a.)")
+    ax[1][1].grid()
+    ax[1][1].legend()
+
+    ax[2][0].plot(t, alias_2, color='g', label='Pulso')
+    ax[2][0].set_xlabel("Tiempo (ps)")
+    ax[2][0].set_ylabel("Intensidad (u.a.)")
+    ax[2][0].grid()
+    ax[2][0].legend()
+
+    ax[2][1].plot(delays, autocorrelacion_2orden(delays, Δt, intensidad_ejemplo, t, β, α/2), color='g', label=r'$A^{(2)}(\tau)$')
+    ax[2][1].set_xlabel("Retardo (ps)")
+    ax[2][1].set_ylabel("Intensidad (u.a.)")
+    ax[2][1].grid()
+    ax[2][1].legend()
+
+    ax[3][0].plot(t, alias_3, color='k', label='Pulso')
+    ax[3][0].set_xlabel("Tiempo (ps)")
+    ax[3][0].set_ylabel("Intensidad (u.a.)")
+    ax[3][0].grid()
+    ax[3][0].legend()
+
+    ax[3][1].plot(delays, autocorrelacion_2orden(delays, Δt, intensidad_ejemplo, t, β, α/4), color='k', label=r'$A^{(2)}(\tau)$')
+    ax[3][1].set_xlabel("Retardo (ps)")
+    ax[3][1].set_ylabel("Intensidad (u.a.)")
+    ax[3][1].grid()
+    ax[3][1].legend()
+
+    fig.suptitle("Pulsos con la misma autocorrelación de segundo orden")
+
+
+    """
+    Vamos a ver si ocurre lo mismo para la autocorrelación de tercer orden
+    """
+
+    fig, ax = plt.subplots(4, 2)
+    ax[0][0].plot(t, exponencial_decreciente, label='Pulso')
+    ax[0][0].set_xlabel("Tiempo (ps)")
+    ax[0][0].set_ylabel("Intensidad (u.a.)")
+    ax[0][0].grid()
+    ax[0][0].legend()
+
+    ax[0][1].plot(delays, autocorrelacion_3orden(delays, Δt, intensidad_ejemplo, t, β), label=r'$A^{(3)}(\tau)$')
+    ax[0][1].set_xlabel("Retardo (ps)")
+    ax[0][1].set_ylabel("Intensidad (u.a.)")
+    ax[0][1].grid()
+    ax[0][1].legend()
+
+    ax[1][0].plot(t, alias_1, color='r', label='Pulso')
+    ax[1][0].set_xlabel("Tiempo (ps)")
+    ax[1][0].set_ylabel("Intensidad (u.a.)")
+    ax[1][0].grid()
+    ax[1][0].legend()
+
+    ax[1][1].plot(delays, autocorrelacion_3orden(delays, Δt, intensidad_ejemplo, t, β, α), color='r', label=r'$A^{(3)}(\tau)$')
+    ax[1][1].set_xlabel("Retardo (ps)")
+    ax[1][1].set_ylabel("Intensidad (u.a.)")
+    ax[1][1].grid()
+    ax[1][1].legend()
+
+    ax[2][0].plot(t, alias_2, color='g', label='Pulso')
+    ax[2][0].set_xlabel("Tiempo (ps)")
+    ax[2][0].set_ylabel("Intensidad (u.a.)")
+    ax[2][0].grid()
+    ax[2][0].legend()
+
+    ax[2][1].plot(delays, autocorrelacion_3orden(delays, Δt, intensidad_ejemplo, t, β, α/2), color='g', label=r'$A^{(3)}(\tau)$')
+    ax[2][1].set_xlabel("Retardo (ps)")
+    ax[2][1].set_ylabel("Intensidad (u.a.)")
+    ax[2][1].grid()
+    ax[2][1].legend()
+
+    ax[3][0].plot(t, alias_3, color='k', label='Pulso')
+    ax[3][0].set_xlabel("Tiempo (ps)")
+    ax[3][0].set_ylabel("Intensidad (u.a.)")
+    ax[3][0].grid()
+    ax[3][0].legend()
+
+    ax[3][1].plot(delays, autocorrelacion_3orden(delays, Δt, intensidad_ejemplo, t, β, α/4), color='k', label=r'$A^{(3)}(\tau)$')
+    ax[3][1].set_xlabel("Retardo (ps)")
+    ax[3][1].set_ylabel("Intensidad (u.a.)")
+    ax[3][1].grid()
+    ax[3][1].legend()
+
+    fig.suptitle("Pero no tienen la misma autocorrelación de tercer orden")
 
     plt.show()
