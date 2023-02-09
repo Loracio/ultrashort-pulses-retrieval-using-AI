@@ -388,21 +388,21 @@ if __name__ == '__main__':
         return np.abs(doble_pulso_gaussiano(t, t0_1, A_1, τ_1, ω_0_1, φ_1, t0_2, A_2, τ_2, ω_0_2, φ_2))**2
 
 
-    animacion_A2 = animacionAutocorrelacion2orden(t, Δt, delays, intensidad, t0, A, τ, ω_0, φ, interval=40)
+    animacion_A2 = animacionAutocorrelacion2orden(t, Δt, t, intensidad, t0, A, τ, ω_0, φ, interval=40)
 
     plt.show()
 
-    animacion_A2 = animacionAutocorrelacion2orden(t, Δt, delays, intensidad_doble_pulso, -5, A, τ, ω_0, φ, 3, A/2, τ/4, ω_0, φ, interval=40)
+    animacion_A2 = animacionAutocorrelacion2orden(t, Δt, t, intensidad_doble_pulso, -5, A, τ, ω_0, φ, 3, A/2, τ/4, ω_0, φ, interval=40)
 
     plt.show()
 
-    animacion_A3 = animacionAutocorrelacion3orden(t, Δt, delays, pulso_gaussiano, t0, A, τ, ω_0, φ, interval=40)
+    animacion_A3 = animacionAutocorrelacion3orden(t, Δt, t, intensidad, t0, A, τ, ω_0, φ, interval=40)
 
-    # plt.show()
+    plt.show()
 
-    animacion_A3 = animacionAutocorrelacion3orden(t, Δt, delays, doble_pulso_gaussiano, -5, A, τ, ω_0, φ, 3, A/2, τ/4, ω_0, φ, interval=40)
+    animacion_A3 = animacionAutocorrelacion3orden(t, Δt, t, intensidad_doble_pulso, -5, A, τ, ω_0, φ, 3, A/2, τ/4, ω_0, φ, interval=40)
 
-    # plt.show()
+    plt.show()
 
     animacion_FRAC = animacionFRAC(t, Δt, delays, pulso_gaussiano, t0, A, τ, ω_0, φ, interval=40)
 
