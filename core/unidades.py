@@ -27,7 +27,7 @@ def _longitudOnda_frecuenciaAngular(λ):
     return 2 * np.pi * constants.c / λ
 
 def _longitudOnda_frecuencia(λ):
-    return constans.c / λ
+    return constants.c / λ
 
 def _longitudOnda_vectorOndas(λ):
     return 2 * np.pi / λ

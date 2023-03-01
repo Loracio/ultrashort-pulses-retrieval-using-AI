@@ -64,3 +64,31 @@ def transformada_pulso_gaussiano(ω, t0, A, τ, ω_0, φ):
     """
 
     return A * τ * np.sqrt(2 * np.pi) * np.exp(1j * (φ + t0 * (ω_0 - ω)) - (ω - ω_0)*(ω - ω_0) / (2 * τ * τ))
+
+
+def media(x, y):
+    """
+    Calcula la media de la distribución dada por (x, f(x) = y)
+
+    Args:
+        x (np.array): valores en el eje X
+        y (np.array): valores en el eje Y
+
+    Devuelve:
+        (float): media de la distribución
+    """
+    return np.sum(x * y) / np.sum(y)
+
+def desviacion_estandar(x, y):
+    """
+    Calcula la desviacion estandar de la distribución dada por (x, f(x) = y)
+
+    Args:
+        x (np.array): valores en el eje X
+        y (np.array): valores en el eje Y
+
+    Devuelve:
+        (float): desviacion estandar de la distribución
+    """
+    dx = x - media(x, y)
+    return np.sqrt(np.sum(dx * dx * y) / np.sum(y))

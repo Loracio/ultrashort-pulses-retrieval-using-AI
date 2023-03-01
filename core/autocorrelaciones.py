@@ -1,6 +1,8 @@
 import numpy as np
+from .fourier import *
+from .unidades import *
 
-def autocorrelacion_2orden(delays, Δt, funcion, tiempos, *args):
+def autocorrelacion_2orden_naive(delays, Δt, funcion, tiempos, *args):
     """
     Calcula la autocorrelacion de segundo orden para una funcion dada.
         A⁽²⁾(τ) = ∫f(t)f(t-τ) dt
@@ -21,7 +23,7 @@ def autocorrelacion_2orden(delays, Δt, funcion, tiempos, *args):
 
     Por ejemplo si tenemos una función que depende de (t0, A, τ, ω_0, φ) además
     del tiempo, deberemos de llamar a esta función como:
-        autocorrelacion_2orden(delays, Δt, funcion, tiempos, t0, A, τ, ω_0, φ)
+        autocorrelacion_2orden_naive(delays, Δt, funcion, tiempos, t0, A, τ, ω_0, φ)
 
     De esta manera internamente se podrá evaluar la función para los distintos retardos
     en los que queremos obtener el valor de la autocorrelación y así poder realizar el
@@ -48,7 +50,7 @@ def autocorrelacion_2orden(delays, Δt, funcion, tiempos, *args):
     return A_2
 
 
-def autocorrelacion_3orden(delays, Δt, funcion, tiempos, *args):
+def autocorrelacion_3orden_naive(delays, Δt, funcion, tiempos, *args):
     """
     Calcula la autocorrelacion de segundo orden para una funcion dada.
         A⁽³⁾(τ) = ∫f(t)f²(t-τ) dt
@@ -69,7 +71,7 @@ def autocorrelacion_3orden(delays, Δt, funcion, tiempos, *args):
 
     Por ejemplo si tenemos una función que depende de (t0, A, τ, ω_0, φ) además
     del tiempo, deberemos de llamar a esta función como:
-        autocorrelacion_3orden(delays, Δt, funcion, tiempos, t0, A, τ, ω_0, φ)
+        autocorrelacion_3orden_naive(delays, Δt, funcion, tiempos, t0, A, τ, ω_0, φ)
 
     De esta manera internamente se podrá evaluar la función para los distintos retardos
     en los que queremos obtener el valor de la autocorrelación y así poder realizar el
@@ -95,13 +97,13 @@ def autocorrelacion_3orden(delays, Δt, funcion, tiempos, *args):
 
     return A_3
 
-def FRAC(delays, Δt, funcion, tiempos, *args):
+def autocorrelacion_interferometrica_naive(delays, Δt, funcion, tiempos, *args):
     """
-    Calcula la autocorrelacion "FRAC" (fringe-resolved autocorrelation):
-        I_FRAC(τ) = ∫|[f(t) + f(t-τ)]²|² dt
+    Calcula la autocorrelacion interferométrica:
+        IA(τ) = ∫|[f(t) + f(t-τ)]²|² dt
     
     Utilizando integración numérica por el método del trapecio. Es decir:
-        I_FRAC(τ) = ∑ⱼ₌₀ᴺ⁻¹ [f(tⱼ) + f(tⱼ-τ)]²|² Δt
+        IA(τ) = ∑ⱼ₌₀ᴺ⁻¹ [f(tⱼ) + f(tⱼ-τ)]²|² Δt
 
     Para ello, deberemos especificar para qué valores de retrasos (delays)
     queremos evaluar la función, y el espaciado temporal de los valores de
@@ -116,7 +118,7 @@ def FRAC(delays, Δt, funcion, tiempos, *args):
 
     Por ejemplo si tenemos una función que depende de (t0, A, τ, ω_0, φ) además
     del tiempo, deberemos de llamar a esta función como:
-        autocorrelacion_3orden(delays, Δt, funcion, tiempos, t0, A, τ, ω_0, φ)
+        autocorrelacion_interferometrica_naive(delays, Δt, funcion, tiempos, t0, A, τ, ω_0, φ)
 
     De esta manera internamente se podrá evaluar la función para los distintos retardos
     en los que queremos obtener el valor de la autocorrelación y así poder realizar el
@@ -132,15 +134,15 @@ def FRAC(delays, Δt, funcion, tiempos, *args):
     Returns:
         FRAC: valores de la función de autocorrelación "FRAC"
     """
-    FRAC = np.zeros(np.size(delays))
+    IA = np.zeros(np.size(delays))
 
     valores = funcion(tiempos, *args)
 
     for i, τ in enumerate(delays):
         valores_retardo = funcion(tiempos - τ, *args)
-        FRAC[i] = trapecio(np.abs((valores + valores_retardo)**2)**2, Δt)
+        IA[i] = trapecio(np.abs((valores + valores_retardo)**2)**2, Δt)
 
-    return FRAC
+    return IA
 
 
 def trapecio(func_vals, h):
@@ -162,3 +164,186 @@ def trapecio(func_vals, h):
     integral = h/2 * np.dot(weights,func_vals)
 
     return integral
+
+
+def autocorrelacion_2orden(valores, N, Δt):
+    """
+    Calcula la autocorrelacion de segundo orden para una funcion dada.
+        A⁽²⁾(τ) = ∫f(t)f(t-τ) dt
+    
+    Utilizando integración numérica por el método del trapecio. Es decir:
+        A⁽²⁾(τ) = ∑ⱼ₌₀ᴺ⁻¹ f(tⱼ)f(tⱼ - τ) Δt
+
+    Donde τ tomará los valores desde -(N - 1)·Δt hasta +(N - 1)·Δt con un espaciado Δt.
+
+    De esta manera, lo que haremos será guardar los valores del integrando multiplicando
+    la señal en cada instante de tiempo por sí misma desplazada cierta cantidad. Es decir,
+    multiplicaremos por un elemento del array movido cierta cantidad de elementos hacia la
+    derecha o la izquierda.
+
+    La integración se realiza usando el método del trapecio.
+
+    Args:
+        valores (np.ndarray): vector con los valores de la función sobre la que calcular la autocorrelación
+        N (int): número de muestras
+        Δt (float): espaciado del vector de tiempos
+
+    Returns:
+        A_2: valores de la función de autocorrelación de segundo orden
+    """
+    A_2 = np.zeros(2 * N - 1, dtype=float)
+    valores_integrando = np.zeros(N, dtype=valores.dtype)
+
+    for τ in range(N):
+        valores_integrando[:τ + 1] = valores[:τ + 1] * valores[N - τ - 1:]
+        valores_integrando[τ + 1:] = 0
+        A_2[τ] = trapecio(valores_integrando, Δt)
+
+    for τ in range(N - 1):
+        valores_integrando[:τ + 1] = 0
+        valores_integrando[τ + 1:] = valores[τ + 1:] * valores[: N - τ - 1]
+        A_2[N + τ] = trapecio(valores_integrando, Δt)
+
+    return A_2
+
+def autocorrelacion_3orden(valores, N, Δt):
+    """
+    Calcula la autocorrelacion de tercer orden para una funcion dada.    
+        A⁽³⁾(τ) = ∫f(t)f²(t-τ) dt
+    
+    Utilizando integración numérica por el método del trapecio. Es decir:
+        A⁽³⁾(τ) = ∑ⱼ₌₀ᴺ⁻¹ f(tⱼ)f²(tⱼ - τ) Δt
+
+    Donde τ tomará los valores desde -(N - 1)·Δt hasta +(N - 1)·Δt con un espaciado Δt.
+
+    De esta manera, lo que haremos será guardar los valores del integrando multiplicando
+    la señal en cada instante de tiempo por sí misma desplazada cierta cantidad. Es decir,
+    multiplicaremos por un elemento del array movido cierta cantidad de elementos hacia la
+    derecha o la izquierda.
+
+    La integración se realiza usando el método del trapecio.
+
+    Args:
+        valores (np.ndarray): vector con los valores de la función sobre la que calcular la autocorrelación
+        N (int): número de muestras
+        Δt (float): espaciado del vector de tiempos
+
+    Returns:
+        A_3: valores de la función de autocorrelación de tercer orden
+    """
+    A_3 = np.zeros(2 * N - 1, dtype=float)
+    valores_integrando = np.zeros(N, dtype=valores.dtype)
+
+    for τ in range(N):
+        valores_integrando[:τ + 1] = valores[:τ + 1] * valores[N - τ - 1:]**2
+        valores_integrando[τ + 1:] = 0
+        A_3[τ] = trapecio(valores_integrando, Δt)
+
+    for τ in range(N - 1):
+        valores_integrando[:τ + 1] = 0
+        valores_integrando[τ + 1:] = valores[τ + 1:] * valores[: N - τ - 1]**2
+        A_3[N + τ] = trapecio(valores_integrando, Δt)
+
+    return A_3
+
+def autocorrelacion_interferometrica(valores, N, Δt):
+    """
+    Calcula la autocorrelacion "FRAC" (fringe-resolved autocorrelation):
+        IA(τ) = ∫|[f(t) + f(t-τ)]²|² dt
+    
+    Utilizando integración numérica por el método del trapecio. Es decir:
+        IA(τ) = ∑ⱼ₌₀ᴺ⁻¹ [f(tⱼ) + f(tⱼ-τ)]²|² Δt
+
+    Donde τ tomará los valores desde -(N - 1)·Δt hasta +(N - 1)·Δt con un espaciado Δt.
+
+    De esta manera, lo que haremos será guardar los valores del integrando multiplicando
+    la señal en cada instante de tiempo por sí misma desplazada cierta cantidad. Es decir,
+    multiplicaremos por un elemento del array movido cierta cantidad de elementos hacia la
+    derecha o la izquierda.
+
+    La integración se realiza usando el método del trapecio.
+    
+    Args:
+        valores (np.ndarray): vector con los valores de la función sobre la que calcular la autocorrelación
+        N (int): número de muestras
+        Δt (float): espaciado del vector de tiempos
+
+    Returns:
+        IA: valores de la autocorrelación interferométrica (IA)
+    """
+    IA = np.zeros(2 * N - 1, dtype=float)
+    valores_integrando = np.zeros(2 * N - 1, dtype=valores.dtype)
+
+
+    #! NO FUNCIONA BIEN, REVISAR
+    for τ in range(N):
+        valores_integrando[: τ] = 0
+        valores_integrando[τ : N - 1] = valores[: N - τ - 1]
+        valores_integrando[N - 1 : N + τ] = valores[: τ + 1] + valores[N - 1 - τ:]
+        valores_integrando[N + τ:] = valores[τ + 1:]
+        IA[τ] = trapecio(np.abs(valores_integrando**2)**2, Δt)
+
+
+    for τ in range(N - 1):
+        valores_integrando[: τ] = 0
+        valores_integrando[τ : N - 1] = valores[: N - τ - 1]
+        valores_integrando[N - 1 : N + τ] = valores[: τ + 1] + valores[N - 1 - τ:]
+        valores_integrando[N + τ:] = valores[τ + 1:]
+        IA[N + τ] = trapecio(np.abs(valores_integrando**2)**2, Δt)
+
+    return IA
+
+
+def espectrograma(I, t, Δt, N):
+    """
+    Calcula el espectrograma dado por:
+
+        Σg (ω, τ) =  | ∫ I(t)I(t - τ) exp(-i ω t) dt |²
+
+    Es decir:
+        Σg (ω, τ) = |FT[I(t)I(t - τ)]|²
+
+    Así, usaremos el algoritmo de la transformada discreta de Fourier para obtenerlo.
+
+    Para un vector de tiempos dado, el vector de retrasos (delays) se construye como
+    un vector de retrasos equiespaciado Δτ = Δt desde -(N-1)·Δt hasta +(N-1)·Δt.
+
+    El vector de frecuencias viene dado por las restricciones del Tma de Nyquist,
+    desde -fₘ/2 hasta +fₘ/2, donde fₘ es la frecuencia de muestreo de la señal, 
+    dada por fₘ = 1 / Δt.
+
+    Así, para cada valor de τ podemos obtener los valores para cada una de estas frecuencias
+    a partir del cálculo de la DFT, y construimos una malla Nx(2N-1) donde se almacenan cada uno
+    de los valores correspondientes a un valor de ω y τ.
+
+    Se guardan en la malla Σ_g y se devuelven como resultado de la función.
+
+    Argumentos:
+        I (np.array): array con las intensidades
+        t (np.array): vector de tiempos
+        Δt (float): espaciado entre tiempos en el vector de tiempos
+        N (int): número de muestras temporales
+
+    Devuelve:
+        Σ_g (np.meshgrid): valores del espectrograma en cada uno de los puntos de la malla (ω, τ)
+    """
+    delays = np.linspace(-(N - 1) * Δt, (N - 1) * Δt, num=2 * N - 1)
+    ω = convertir(frecuencias_DFT(N, Δt), 'frecuencia', 'frecuencia angular')
+    Δω = 2 * np.pi / (N * Δt) # Relación de reciprocidad Δt Δω = 2π/N
+
+    Σ_g = np.zeros((delays.size, ω.size))
+
+    # Calculamos el valor de I(t)*I(t - τ) y lo pasamos como argumento para hacer la transformada de Fourier
+    valores_integrando = np.zeros(N, dtype=I.dtype)
+
+    for τ in range(N):
+        valores_integrando[:τ + 1] = I[:τ + 1] * I[N - τ - 1:]
+        valores_integrando[τ + 1:] = 0
+        Σ_g[:][τ] = np.abs(DFT(valores_integrando, t, Δt, ω, Δω))**2
+
+    for τ in range(N - 1):
+        valores_integrando[:τ + 1] = 0
+        valores_integrando[τ + 1:] = I[τ + 1:] * I[: N - τ - 1]
+        Σ_g[:][N + τ] = np.abs(DFT(valores_integrando, t, Δt, ω, Δω))**2
+
+    return Σ_g

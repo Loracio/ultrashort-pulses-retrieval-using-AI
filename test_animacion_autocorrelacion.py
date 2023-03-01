@@ -27,7 +27,7 @@ class animacionAutocorrelacion2orden:
         self.inmovil = self.func(self.t, *self.args) # Pulso que se queda inmovil para hacer la autocorrelacion
         self.movil = self.func(self.t - self.delays[0], *self.args) # Pulso que se irá moviendo a lo largo de la animación
 
-        self.valores_autocorrelacion = autocorrelacion_2orden(self.delays, self.Δt, self.func, self.t, *self.args)
+        self.valores_autocorrelacion = autocorrelacion_2orden_naive(self.delays, self.Δt, self.func, self.t, *self.args)
 
         self.prepareCanvas()
 
@@ -131,7 +131,7 @@ class animacionAutocorrelacion3orden:
         self.inmovil = self.func(self.t, *self.args) # Pulso que se queda inmovil para hacer la autocorrelacion
         self.movil = self.func(self.t - self.delays[0], *self.args)**2 # Pulso que se irá moviendo a lo largo de la animación
 
-        self.valores_autocorrelacion = autocorrelacion_3orden(self.delays, self.Δt, self.func, self.t, *self.args)
+        self.valores_autocorrelacion = autocorrelacion_3orden_naive(self.delays, self.Δt, self.func, self.t, *self.args)
 
         self.prepareCanvas()
 
@@ -174,7 +174,7 @@ class animacionAutocorrelacion3orden:
         self.ax[1].set_ylabel("Valor del integrando")
         self.ax[1].legend(loc='upper right')
         self.ax[1].grid()
-        self.ax[1].set_ylim(top=np.max(self.inmovil)*np.max(self.movil)**2 * 1.25)
+        self.ax[1].set_ylim(top=np.max(self.inmovil)*np.max(self.inmovil)**2 * 1.25)
 
         self.ax[2].set_xlabel("Retraso")
         self.ax[2].set_ylabel("Intensidad (u.a.)")
@@ -214,7 +214,7 @@ class animacionAutocorrelacion3orden:
 #! ################################################################################################################################################################################################
 
 
-class animacionFRAC:
+class animacionIA:
     def __init__(self, t, Δt, delays, funcion, *args, interval=10):
         self.t = t
         self.Δt = Δt
@@ -238,7 +238,7 @@ class animacionFRAC:
         self.campo_movil = self.func(self.t - self.delays[0], *self.args) # Pulso que se irá moviendo a lo largo de la animación
         self.intensidad_movil = np.abs(self.campo_movil)**2
 
-        self.valores_autocorrelacion = FRAC(self.delays, self.Δt, self.func, self.t, *self.args)
+        self.valores_autocorrelacion = autocorrelacion_interferometrica_naive(self.delays, self.Δt, self.func, self.t, *self.args)
 
         self.prepareCanvas()
 
@@ -272,7 +272,7 @@ class animacionFRAC:
         self.ax[0].plot(self.t, self.intensidad_inmovil, label="I(t)")
         self.line_movil, = self.ax[0].plot(self.t, self.intensidad_movil, label="I(t-τ)")
 
-        self.line_correlacion, = self.ax[2].plot(self.delays[0], self.valores_autocorrelacion[0], color='red', label="FRAC")
+        self.line_correlacion, = self.ax[2].plot(self.delays[0], self.valores_autocorrelacion[0], color='red', label="IA")
 
         self.ax[0].set_xlabel("Tiempo")
         self.ax[0].set_ylabel("Intensidad (u.a.)")
@@ -342,8 +342,8 @@ if __name__ == '__main__':
     #! ########################## PRUEBAS CON PULSOS GAUSSIANOS ######################################################
 
     # Parámetros de la medida
-    numero_de_muestras = 4 * 4096
-    duracion_temporal = 4 * 10 # Tiempo total de medida de la señal (ps)
+    numero_de_muestras = 3 * 4096
+    duracion_temporal = 3 * 10 # Tiempo total de medida de la señal (ps)
     frecuencia_muestreo = numero_de_muestras / duracion_temporal # En THz
 
     t, Δt = np.linspace(-duracion_temporal/2, duracion_temporal/2, num=numero_de_muestras, retstep=True) # Vector de tiempos. Guardamos la separación entre datos (inversa de la frecuencia de muestreo)
@@ -389,25 +389,19 @@ if __name__ == '__main__':
 
 
     animacion_A2 = animacionAutocorrelacion2orden(t, Δt, t, intensidad, t0, A, τ, ω_0, φ, interval=40)
-
     plt.show()
 
     animacion_A2 = animacionAutocorrelacion2orden(t, Δt, t, intensidad_doble_pulso, -5, A, τ, ω_0, φ, 3, A/2, τ/4, ω_0, φ, interval=40)
-
     plt.show()
 
     animacion_A3 = animacionAutocorrelacion3orden(t, Δt, t, intensidad, t0, A, τ, ω_0, φ, interval=40)
-
     plt.show()
 
     animacion_A3 = animacionAutocorrelacion3orden(t, Δt, t, intensidad_doble_pulso, -5, A, τ, ω_0, φ, 3, A/2, τ/4, ω_0, φ, interval=40)
-
     plt.show()
 
-    animacion_FRAC = animacionFRAC(t, Δt, delays, pulso_gaussiano, t0, A, τ, ω_0, φ, interval=40)
-
+    animacion_IA = animacionIA(t, Δt, delays, pulso_gaussiano, t0, A, τ, ω_0, φ, interval=40)
     plt.show()
 
-    animacion_FRAC = animacionFRAC(t, Δt, delays, doble_pulso_gaussiano, -5, A, τ, ω_0, φ, 3, A/2, τ/4, ω_0, φ, interval=40)
-
+    animacion_IA = animacionIA(t, Δt, delays, doble_pulso_gaussiano, -5, A, τ, ω_0, φ, 3, A/2, τ/4, ω_0, φ, interval=40)
     plt.show()

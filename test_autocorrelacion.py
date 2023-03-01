@@ -18,13 +18,13 @@ if __name__ == '__main__':
         - Autocorrelación de tercer orden:
             A⁽³⁾(τ) = ∫I(t)I²(t-τ) dt
 
-        - Autocorrelación "FRAC":
-            I_FRAC(τ) = ∫|[E(t) + E(t-τ)]²|² dt
+        - Autocorrelación "autocorrelacion_interferometrica_naive":
+            I_autocorrelacion_interferometrica_naive(τ) = ∫|[E(t) + E(t-τ)]²|² dt
     """
 
     # Parámetros de la medida
-    numero_de_muestras = 4 * 4096
-    duracion_temporal = 4 * 10 # Tiempo total de medida de la señal (ps)
+    numero_de_muestras = 2 * 4096
+    duracion_temporal = 2 * 10 # Tiempo total de medida de la señal (ps)
     frecuencia_muestreo = numero_de_muestras / duracion_temporal # En THz
 
     t, Δt = np.linspace(-duracion_temporal/2, duracion_temporal/2, num=numero_de_muestras, retstep=True) # Vector de tiempos. Guardamos la separación entre datos (inversa de la frecuencia de muestreo)
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     ax[0][0].grid()
     ax[0][0].legend()
 
-    ax[0][1].plot(delays, autocorrelacion_2orden(delays, Δt, intensidad, t, t0, A, τ, ω_0, φ), label=r'$A^{(2)}(\tau)$')
+    ax[0][1].plot(delays, autocorrelacion_2orden_naive(delays, Δt, intensidad, t, t0, A, τ, ω_0, φ), label=r'$A^{(2)}(\tau)$')
     ax[0][1].set_xlabel("Retardo (ps)")
     ax[0][1].set_ylabel("Intensidad (u.a.)")
     ax[0][1].grid()
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     ax[1][0].grid()
     ax[1][0].legend()
 
-    ax[1][1].plot(delays, autocorrelacion_2orden(delays, Δt, intensidad_doble_pulso, t, -5, A, τ, ω_0, φ, 3, A/2, τ/4, ω_0, φ), color='r', label=r'$A^{(2)}(\tau)$')
+    ax[1][1].plot(delays, autocorrelacion_2orden_naive(delays, Δt, intensidad_doble_pulso, t, -5, A, τ, ω_0, φ, 3, A/2, τ/4, ω_0, φ), color='r', label=r'$A^{(2)}(\tau)$')
     ax[1][1].set_xlabel("Retardo (ps)")
     ax[1][1].set_ylabel("Intensidad (u.a.)")
     ax[1][1].grid()
@@ -127,7 +127,7 @@ if __name__ == '__main__':
     ax[0][0].grid()
     ax[0][0].legend()
 
-    ax[0][1].plot(delays, autocorrelacion_3orden(delays, Δt, intensidad, t, t0, A, τ, ω_0, φ), label=r'$A^{(3)}(\tau)$')
+    ax[0][1].plot(delays, autocorrelacion_3orden_naive(delays, Δt, intensidad, t, t0, A, τ, ω_0, φ), label=r'$A^{(3)}(\tau)$')
     ax[0][1].set_xlabel("Retardo (ps)")
     ax[0][1].set_ylabel("Intensidad (u.a.)")
     ax[0][1].grid()
@@ -139,7 +139,7 @@ if __name__ == '__main__':
     ax[1][0].grid()
     ax[1][0].legend()
 
-    ax[1][1].plot(delays, autocorrelacion_3orden(delays, Δt, intensidad_doble_pulso, t, -5, A, τ, ω_0, φ, 3, A/2, τ/4, ω_0, φ), color='r', label=r'$A^{(3)}(\tau)$')
+    ax[1][1].plot(delays, autocorrelacion_3orden_naive(delays, Δt, intensidad_doble_pulso, t, -5, A, τ, ω_0, φ, 3, A/2, τ/4, ω_0, φ), color='r', label=r'$A^{(3)}(\tau)$')
     ax[1][1].set_xlabel("Retardo (ps)")
     ax[1][1].set_ylabel("Intensidad (u.a.)")
     ax[1][1].grid()
@@ -148,10 +148,10 @@ if __name__ == '__main__':
     fig.suptitle("Autocorrelación de tercer orden")
 
     """
-    Ejemplos cálculo autocorrelación "FRAC".
+    Ejemplos cálculo autocorrelación interferometrica.
     """
 
-    # Representación de la intensidad del pulso con su correspondiente autocorrelación "FRAC"
+    # Representación de la intensidad del pulso con su correspondiente autocorrelación interferometrica
     fig, ax = plt.subplots(2, 2)
     ax[0][0].plot(t, np.abs(pulso)**2, label='Pulso')
     ax[0][0].set_xlabel("Tiempo (ps)")
@@ -159,7 +159,7 @@ if __name__ == '__main__':
     ax[0][0].grid()
     ax[0][0].legend()
 
-    ax[0][1].plot(delays, FRAC(delays, Δt, pulso_gaussiano, t, t0, A, τ, ω_0, φ), label="FRAC")
+    ax[0][1].plot(delays, autocorrelacion_interferometrica_naive(delays, Δt, pulso_gaussiano, t, t0, A, τ, ω_0, φ), label="IA")
     ax[0][1].set_xlabel("Retardo (ps)")
     ax[0][1].set_ylabel("Intensidad (u.a.)")
     ax[0][1].grid()
@@ -171,13 +171,13 @@ if __name__ == '__main__':
     ax[1][0].grid()
     ax[1][0].legend()
 
-    ax[1][1].plot(delays, FRAC(delays, Δt, doble_pulso_gaussiano, t, -5, A, τ, ω_0, φ, 3, A/2, τ/4, ω_0, φ), color='r', label="FRAC")
+    ax[1][1].plot(delays, autocorrelacion_interferometrica_naive(delays, Δt, doble_pulso_gaussiano, t, -5, A, τ, ω_0, φ, 3, A/2, τ/4, ω_0, φ), color='r', label="IA")
     ax[1][1].set_xlabel("Retardo (ps)")
     ax[1][1].set_ylabel("Intensidad (u.a.)")
     ax[1][1].grid()
     ax[1][1].legend()
 
-    fig.suptitle("Autocorrelación \"FRAC\"")
+    fig.suptitle("Autocorrelación interferométrica")
 
     plt.show()
 
@@ -227,7 +227,7 @@ if __name__ == '__main__':
     ax[0][0].grid()
     ax[0][0].legend()
 
-    ax[0][1].plot(delays, autocorrelacion_2orden(delays, Δt, intensidad_ejemplo, t, β), label=r'$A^{(2)}(\tau)$')
+    ax[0][1].plot(delays, autocorrelacion_2orden_naive(delays, Δt, intensidad_ejemplo, t, β), label=r'$A^{(2)}(\tau)$')
     ax[0][1].set_xlabel("Retardo (ps)")
     ax[0][1].set_ylabel("Intensidad (u.a.)")
     ax[0][1].grid()
@@ -239,7 +239,7 @@ if __name__ == '__main__':
     ax[1][0].grid()
     ax[1][0].legend()
 
-    ax[1][1].plot(delays, autocorrelacion_2orden(delays, Δt, intensidad_ejemplo, t, β, α), color='r', label=r'$A^{(2)}(\tau)$')
+    ax[1][1].plot(delays, autocorrelacion_2orden_naive(delays, Δt, intensidad_ejemplo, t, β, α), color='r', label=r'$A^{(2)}(\tau)$')
     ax[1][1].set_xlabel("Retardo (ps)")
     ax[1][1].set_ylabel("Intensidad (u.a.)")
     ax[1][1].grid()
@@ -251,7 +251,7 @@ if __name__ == '__main__':
     ax[2][0].grid()
     ax[2][0].legend()
 
-    ax[2][1].plot(delays, autocorrelacion_2orden(delays, Δt, intensidad_ejemplo, t, β, α/2), color='g', label=r'$A^{(2)}(\tau)$')
+    ax[2][1].plot(delays, autocorrelacion_2orden_naive(delays, Δt, intensidad_ejemplo, t, β, α/2), color='g', label=r'$A^{(2)}(\tau)$')
     ax[2][1].set_xlabel("Retardo (ps)")
     ax[2][1].set_ylabel("Intensidad (u.a.)")
     ax[2][1].grid()
@@ -263,14 +263,13 @@ if __name__ == '__main__':
     ax[3][0].grid()
     ax[3][0].legend()
 
-    ax[3][1].plot(delays, autocorrelacion_2orden(delays, Δt, intensidad_ejemplo, t, β, α/4), color='k', label=r'$A^{(2)}(\tau)$')
+    ax[3][1].plot(delays, autocorrelacion_2orden_naive(delays, Δt, intensidad_ejemplo, t, β, α/4), color='k', label=r'$A^{(2)}(\tau)$')
     ax[3][1].set_xlabel("Retardo (ps)")
     ax[3][1].set_ylabel("Intensidad (u.a.)")
     ax[3][1].grid()
     ax[3][1].legend()
 
     fig.suptitle("Pulsos con la misma autocorrelación de segundo orden")
-
 
     """
     Vamos a ver si ocurre lo mismo para la autocorrelación de tercer orden
@@ -283,7 +282,7 @@ if __name__ == '__main__':
     ax[0][0].grid()
     ax[0][0].legend()
 
-    ax[0][1].plot(delays, autocorrelacion_3orden(delays, Δt, intensidad_ejemplo, t, β), label=r'$A^{(3)}(\tau)$')
+    ax[0][1].plot(delays, autocorrelacion_3orden_naive(delays, Δt, intensidad_ejemplo, t, β), label=r'$A^{(3)}(\tau)$')
     ax[0][1].set_xlabel("Retardo (ps)")
     ax[0][1].set_ylabel("Intensidad (u.a.)")
     ax[0][1].grid()
@@ -295,7 +294,7 @@ if __name__ == '__main__':
     ax[1][0].grid()
     ax[1][0].legend()
 
-    ax[1][1].plot(delays, autocorrelacion_3orden(delays, Δt, intensidad_ejemplo, t, β, α), color='r', label=r'$A^{(3)}(\tau)$')
+    ax[1][1].plot(delays, autocorrelacion_3orden_naive(delays, Δt, intensidad_ejemplo, t, β, α), color='r', label=r'$A^{(3)}(\tau)$')
     ax[1][1].set_xlabel("Retardo (ps)")
     ax[1][1].set_ylabel("Intensidad (u.a.)")
     ax[1][1].grid()
@@ -307,7 +306,7 @@ if __name__ == '__main__':
     ax[2][0].grid()
     ax[2][0].legend()
 
-    ax[2][1].plot(delays, autocorrelacion_3orden(delays, Δt, intensidad_ejemplo, t, β, α/2), color='g', label=r'$A^{(3)}(\tau)$')
+    ax[2][1].plot(delays, autocorrelacion_3orden_naive(delays, Δt, intensidad_ejemplo, t, β, α/2), color='g', label=r'$A^{(3)}(\tau)$')
     ax[2][1].set_xlabel("Retardo (ps)")
     ax[2][1].set_ylabel("Intensidad (u.a.)")
     ax[2][1].grid()
@@ -319,7 +318,7 @@ if __name__ == '__main__':
     ax[3][0].grid()
     ax[3][0].legend()
 
-    ax[3][1].plot(delays, autocorrelacion_3orden(delays, Δt, intensidad_ejemplo, t, β, α/4), color='k', label=r'$A^{(3)}(\tau)$')
+    ax[3][1].plot(delays, autocorrelacion_3orden_naive(delays, Δt, intensidad_ejemplo, t, β, α/4), color='k', label=r'$A^{(3)}(\tau)$')
     ax[3][1].set_xlabel("Retardo (ps)")
     ax[3][1].set_ylabel("Intensidad (u.a.)")
     ax[3][1].grid()
