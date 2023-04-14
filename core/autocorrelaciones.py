@@ -203,7 +203,7 @@ def autocorrelacion_2orden(valores, N, Δt):
         valores_integrando[:τ + 1] = 0
         valores_integrando[τ + 1:] = valores[τ + 1:] * valores[: N - τ - 1]
         A_2[N + τ] = trapecio(valores_integrando, Δt)
-
+    
     return A_2
 
 def autocorrelacion_3orden(valores, N, Δt):
@@ -272,38 +272,31 @@ def autocorrelacion_interferometrica(valores, N, Δt):
         IA: valores de la autocorrelación interferométrica (IA)
     """
     IA = np.zeros(2 * N - 1, dtype=float)
-    valores_integrando = np.zeros(2 * N - 1, dtype=valores.dtype)
+    
+    valores_extendidos = np.zeros(2 * N - 1, dtype=valores.dtype)
+    valores_desplazados = np.zeros(2 * N - 1, dtype=valores.dtype)
 
+    valores_extendidos[N - 1 : 2 * N - 1] = valores
+    valores_desplazados[0 : N] = valores
 
-    #! NO FUNCIONA BIEN, REVISAR
-    for τ in range(N):
-        valores_integrando[: τ] = 0
-        valores_integrando[τ : N - 1] = valores[: N - τ - 1]
-        valores_integrando[N - 1 : N + τ] = valores[: τ + 1] + valores[N - 1 - τ:]
-        valores_integrando[N + τ:] = valores[τ + 1:]
-        IA[τ] = trapecio(np.abs(valores_integrando**2)**2, Δt)
+    for τ in range(2 * N - 1):
+        valores_desplazados = np.roll(valores_desplazados, 1)
+        IA[τ] = trapecio(np.abs((valores_extendidos + valores_desplazados)**2)**2, Δt)
 
-
-    for τ in range(N - 1):
-        valores_integrando[: τ] = 0
-        valores_integrando[τ : N - 1] = valores[: N - τ - 1]
-        valores_integrando[N - 1 : N + τ] = valores[: τ + 1] + valores[N - 1 - τ:]
-        valores_integrando[N + τ:] = valores[τ + 1:]
-        IA[N + τ] = trapecio(np.abs(valores_integrando**2)**2, Δt)
 
     return IA
 
 
-def espectrograma(I, t, Δt, N):
+def traza(E, t, Δt, N):
     """
-    Calcula el espectrograma dado por:
+    Calcula la traza dada por:
 
-        Σg (ω, τ) =  | ∫ I(t)I(t - τ) exp(-i ω t) dt |²
+        T(ω, τ) =  | ∫ E(t)E(t - τ) exp(-i ω t) dt |²
 
     Es decir:
-        Σg (ω, τ) = |FT[I(t)I(t - τ)]|²
+        T(ω, τ) = |FT[E(t)E(t - τ)]|²
 
-    Así, usaremos el algoritmo de la transformada discreta de Fourier para obtenerlo.
+    Así, usaremos el algoritmo de la transformada discreta de Fourier para obtenerla.
 
     Para un vector de tiempos dado, el vector de retrasos (delays) se construye como
     un vector de retrasos equiespaciado Δτ = Δt desde -(N-1)·Δt hasta +(N-1)·Δt.
@@ -313,37 +306,37 @@ def espectrograma(I, t, Δt, N):
     dada por fₘ = 1 / Δt.
 
     Así, para cada valor de τ podemos obtener los valores para cada una de estas frecuencias
-    a partir del cálculo de la DFT, y construimos una malla Nx(2N-1) donde se almacenan cada uno
+    a partir del cálculo de la DFT, y construimos una malla (2N-1)xN donde se almacenan cada uno
     de los valores correspondientes a un valor de ω y τ.
 
-    Se guardan en la malla Σ_g y se devuelven como resultado de la función.
+    Se guardan en la malla T y se devuelven como resultado de la función.
 
     Argumentos:
-        I (np.array): array con las intensidades
+        E (np.array): array con el campo complejo del pulso
         t (np.array): vector de tiempos
         Δt (float): espaciado entre tiempos en el vector de tiempos
         N (int): número de muestras temporales
 
     Devuelve:
-        Σ_g (np.meshgrid): valores del espectrograma en cada uno de los puntos de la malla (ω, τ)
+        T (np.meshgrid): valores de la traza en cada uno de los puntos de la malla (ω, τ)
     """
     delays = np.linspace(-(N - 1) * Δt, (N - 1) * Δt, num=2 * N - 1)
     ω = convertir(frecuencias_DFT(N, Δt), 'frecuencia', 'frecuencia angular')
     Δω = 2 * np.pi / (N * Δt) # Relación de reciprocidad Δt Δω = 2π/N
 
-    Σ_g = np.zeros((delays.size, ω.size))
+    T = np.zeros((delays.size, ω.size))
 
-    # Calculamos el valor de I(t)*I(t - τ) y lo pasamos como argumento para hacer la transformada de Fourier
-    valores_integrando = np.zeros(N, dtype=I.dtype)
+    # Calculamos el valor de E(t)*E(t - τ) y lo pasamos como argumento para hacer la transformada de Fourier
+    valores_integrando = np.zeros(N, dtype=E.dtype)
 
     for τ in range(N):
-        valores_integrando[:τ + 1] = I[:τ + 1] * I[N - τ - 1:]
+        valores_integrando[:τ + 1] = E[:τ + 1] * E[N - τ - 1:]
         valores_integrando[τ + 1:] = 0
-        Σ_g[:][τ] = np.abs(DFT(valores_integrando, t, Δt, ω, Δω))**2
+        T[:][τ] = np.abs(DFT(valores_integrando, t, Δt, ω, Δω))**2
 
     for τ in range(N - 1):
         valores_integrando[:τ + 1] = 0
-        valores_integrando[τ + 1:] = I[τ + 1:] * I[: N - τ - 1]
-        Σ_g[:][N + τ] = np.abs(DFT(valores_integrando, t, Δt, ω, Δω))**2
+        valores_integrando[τ + 1:] = E[τ + 1:] * E[: N - τ - 1]
+        T[:][N + τ] = np.abs(DFT(valores_integrando, t, Δt, ω, Δω))**2
 
-    return Σ_g
+    return T

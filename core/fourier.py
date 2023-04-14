@@ -1,6 +1,6 @@
 import numpy as np
 
-def DFT(E, t, Δt, ω, Δω):
+def DFT(E, t, Δt, ω, Δω, *, r_n=None, s_j=None):
     """
     Escogiendo como definición de la transformada directa:
         Ẽ(ω) = ∫E(t)e^{-i ω t} dt
@@ -54,25 +54,28 @@ def DFT(E, t, Δt, ω, Δω):
         Δt (float): espaciado del array de tiempos
         ω (np.ndarray): array de frecuencias equiespaciadas Δω
         Δω (float): espaciado del array de frecuencias
+        s_j (np.ndarray[np.float]): Opcional. Array con los factores de fase s_j con fin de agilizar cálculos
+        r_n (np.ndarray[np.float]): Opcional. Array con los factores de fase r_n con fin de agilizar cálculos
 
     Devuelve:
         (np.ndarray[np.complex]): array de datos con la transformada de los datos en el intervalo
                                   de frecuencias especificado
     """
-    if t[0] == 0.0:
-        r_n = 1.0
-    else:
-        r_n = np.exp(-1j * np.arange(np.size(ω)) * t[0] * Δω)
+    if s_j is None and r_n is None:
+        if t[0] == 0.0:
+            r_n = 1.0
+        else:
+            r_n = np.exp(-1j * np.arange(np.size(ω)) * t[0] * Δω)
 
-    if ω[0] == 0.0:
-        s_j = 1.0
-    else:
-        s_j = np.exp(-1j * ω[0] * t)
+        if ω[0] == 0.0:
+            s_j = 1.0
+        else:
+            s_j = np.exp(-1j * ω[0] * t)
 
-    return Δt * r_n * fft(E * s_j)
+    return Δt * r_n * np.fft.fft(E * s_j)
 
 
-def IDFT(Ẽ, t, Δt, ω, Δω):
+def IDFT(Ẽ, t, Δt, ω, Δω, *, r_n_conj=None, s_j_conj=None):
     """
     Escogiendo como definición de la transformada inversa:
         E(t) = 1/2π ∫Ẽ(ω)e^{i t ω} dω
@@ -129,21 +132,24 @@ def IDFT(Ẽ, t, Δt, ω, Δω):
         Δt (float): espaciado del array de tiempos
         ω (np.ndarray): array de frecuencias equiespaciadas Δω
         Δω (float): espaciado del array de frecuencias
+        s_j_conj (np.ndarray[np.float]): Opcional. Array con los factores de fase s_j con fin de agilizar cálculos
+        r_n_conj (np.ndarray[np.float]): Opcional. Array con los factores de fase r_n con fin de agilizar cálculos
 
     Devuelve:
         (np.ndarray[np.complex]): array con los coeficientes temporales
     """
-    if t[0] == 0.0:
-        r_n_conj = 1.0
-    else:
-        r_n_conj = np.exp(1j * np.arange(np.size(ω)) * t[0] * Δω)
+    if s_j_conj is None and r_n_conj is None:
+        if t[0] == 0.0:
+            r_n_conj = 1.0
+        else:
+            r_n_conj = np.exp(1j * np.arange(np.size(ω)) * t[0] * Δω)
 
-    if ω[0] == 0.0:
-        s_j_conj = 1.0
-    else:
-        s_j_conj = np.exp(1j * ω[0] * t)
+        if ω[0] == 0.0:
+            s_j_conj = 1.0
+        else:
+            s_j_conj = np.exp(1j * ω[0] * t)
 
-    return s_j_conj / Δt * ifft(Ẽ * r_n_conj)
+    return s_j_conj / Δt * np.fft.ifft(Ẽ * r_n_conj)
 
 
 def DFT_clasica(x):

@@ -101,7 +101,7 @@ def pulso_aleatorio(t, Δt, N,  TBP, valor_extremos=None, max_iteraciones=10):
 
     anchura_espectral = np.sqrt(-0.125 * (ω[0] - ω[-1])**2 / log_ve)
     # Obtenemos la anchura temporal por la relación de incertidumbre
-    anchura_temporal = 2.0 * TBP / anchura_espectral #! No veo el por qué de esto
+    anchura_temporal = 2.0 * TBP / anchura_espectral
 
     # Dado esto, como máximo, la anchura temporal podrá ser:
     anchura_temporal_maxima = np.sqrt(-0.125 * (t[0] - t[-1])**2 / log_ve)
@@ -130,7 +130,6 @@ def pulso_aleatorio(t, Δt, N,  TBP, valor_extremos=None, max_iteraciones=10):
 
     if TBP == 0.5:
         # Caso pulso limitado por la transformada
-        #? Por qué es 0.5 y no 0.441? En pypret dice que es porque con esta definición un pulso Gaussiano limitado tiene un TBP de 0.5
         fase = np.exp(2j * np.pi * np.random.rand(N))
         espectro = filtro_espectral * fase
         return  IDFT(espectro, t, Δt, ω, Δω), espectro 

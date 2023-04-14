@@ -1,46 +1,51 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy.constants as constants
 from core import * 
-
-plt.rcParams.update({'font.size': 14}) # Tamaño de la fuente del plot
 
 if __name__ == '__main__':
 
 # Parámetros de la medida
-    numero_de_muestras = 256
-    duracion_temporal = 10 # Tiempo total de medida de la señal (ps)
+    numero_de_muestras = 4*512
+    duracion_temporal = 1 # Tiempo total de medida de la señal (ps)
     frecuencia_muestreo = numero_de_muestras / duracion_temporal # En THz
 
+    t, Δt = np.linspace(-duracion_temporal/2 , duracion_temporal/2, num=numero_de_muestras, retstep=True) # Vector de tiempos. Guardamos la separación entre datos (inversa de la frecuencia de muestreo)
+
+    # -- Parámetros del pulso --
+    t0 = 0# Tiempo en el que el pulso tiene su máximo (ps)
+    A = 1 # Amplitud del pulso
     λ_0 = 1.55 # Longitud de onda de ejemplo (en micrómetros)
-    ω_0 = 2 * np.pi * constants.c * 1e-12 / (λ_0 * 1e-6) # Frecuencia central del pulso (rad / ps)
+    ω_0 = 2 * np.pi * constants.c * 1e-12 / (λ_0 * 1e-6) # Frecuencia angular del pulso (rad / ps)
+    φ_0 =  0 # Fase del pulso (constante en este caso)
+    τ = 0.2 # Duración del pulso (ps)
+    a = 0 # Parámetro de chirp del pulso 
+    φ =  a * (t - t0) * (t - t0) / (τ * τ ) # Chirpeo lineal
 
-    TBP = 2.501
+    # Comprobamos que se cumple el teorema de muestreo de Nyquist para que los resultados sean correctos
+    print(f"Frecuencia de muestreo: {frecuencia_muestreo} [THz]")
+    print(f"Frecuencia de la señal: {convertir(ω_0, 'frecuencia angular', 'frecuencia')} [THz]")
+    if frecuencia_muestreo/2 > convertir(ω_0, 'frecuencia angular', 'frecuencia'):
+        print("Se cumple el teorema de Nyquist")
+    else:
+        print("¡Atención! No se cumple el teorema de muestreo de Nyquist")
 
-    t, Δt = np.linspace(-duracion_temporal/2, duracion_temporal/2, num=numero_de_muestras, retstep=True) # Vector de tiempos. Guardamos la separación entre datos (inversa de la frecuencia de muestreo)
 
-    # Definimos el aray de los delays
     delays = np.linspace(-(numero_de_muestras - 1) * Δt, (numero_de_muestras - 1) * Δt, num=2 * numero_de_muestras - 1)
-    # Array de frecuencias
-    frecuencias = convertir(ω_0, 'frecuencia angular', 'frecuencia') + frecuencias_DFT(numero_de_muestras, Δt)
 
-    # Creamos pulso aleatorio con TBP especificado
-    pulso, espectro = pulso_aleatorio(t, Δt, numero_de_muestras, TBP)
+    pulso = pulso_gaussiano(t, t0, A, τ, ω_0, φ)
 
-    # Comprobamos TBP obtenido
-    TBP_obtenido = desviacion_estandar(t, np.abs(pulso)**2) * desviacion_estandar(convertir(frecuencias, 'f', 'ω'), np.abs(espectro)**2)
-    print(f'El pulso obtenido tiene un producto tiempo ancho de banda = {TBP_obtenido}')
+    frecuencias = frecuencias_DFT(numero_de_muestras, Δt)
+    ω = convertir(frecuencias, 'f', 'ω')
+    Δω = 2 * np.pi / (numero_de_muestras * Δt)
 
-    """
-    Representación de la intensidad del pulso en el dominio temporal
-    y la intensidad espectral en el dominio frecuencial
+    espectro = DFT(pulso, t, Δt, ω, Δω)
 
-    A su derecha representaremos su traza
-    """
+    # plot_traza(t, Δt, pulso, frecuencias, espectro)
+
+    # plt.show()
 
     I_pulso = np.abs(pulso)**2
     I_espectro = np.abs(espectro)**2
-
 
     fig = plt.figure()
 
@@ -53,7 +58,6 @@ if __name__ == '__main__':
     twin_ax1 = ax1.twinx()
     twin_ax2 = ax2.twinx()
 
-    fig.suptitle(f"Pulso aleatorio con TBP={TBP_obtenido:.2f}")
 
     fase_campo = np.unwrap(np.angle(pulso)) 
     fase_campo -=  media(fase_campo, I_pulso)

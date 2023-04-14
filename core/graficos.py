@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from .autocorrelaciones import espectrograma
+from .autocorrelaciones import traza
 from .utiles import media
 
 def plot_real_imag(t, pulso, φ=None):
@@ -75,10 +75,10 @@ def plot_intensidad(t, I):
 
     return fig, ax
 
-def megaplot(t, Δt, pulso, frecuencias, espectro, TBP=None):
+def plot_traza(t, Δt, pulso, frecuencias, espectro, TBP=None):
     """
     Crea una representación de la intensidad en el dominio temporal,
-    la intensidad espectral en el dominio frecuencial y el espectrograma
+    la intensidad espectral en el dominio frecuencial y la traza
     de un pulso.
 
     Args:
@@ -100,7 +100,6 @@ def megaplot(t, Δt, pulso, frecuencias, espectro, TBP=None):
     ax3 = fig.add_subplot(gs[:, 1])
 
 
-    # fig, ax = plt.subplots(2,1)
     twin_ax1 = ax1.twinx()
     twin_ax2 = ax2.twinx()
 
@@ -134,13 +133,13 @@ def megaplot(t, Δt, pulso, frecuencias, espectro, TBP=None):
     ax2.legend()
 
 
-    Σ_g = espectrograma(I_pulso, t, Δt, t.size)
-    espectrograma_normalizado = Σ_g / np.max(Σ_g)
+    T = traza(pulso, t, Δt, t.size)
+    traza_normalizada = T / np.max(T)
 
     delays = np.linspace(-(t.size - 1) * Δt, (t.size - 1) * Δt, num=2 * t.size - 1)
 
-    im = ax3.pcolormesh(frecuencias, delays, espectrograma_normalizado, cmap='inferno')
+    im = ax3.pcolormesh(frecuencias, delays, traza_normalizada, cmap='inferno')
     fig.colorbar(im, ax=ax3)
     ax3.set_xlabel("Frecuencia (1/ps)")
     ax3.set_ylabel("Retraso (ps)")
-    ax3.set_title(r"$\Sigma_g (\omega, \tau) = |\int_{-\infty}^{\infty} I(t)I(t - \tau) \exp^{- i \omega t} dt|^2$")
+    ax3.set_title(r"$\tilde{T}(\omega, \tau) = |\int_{-\infty}^{\infty} E(t)E(t - \tau) \exp^{- i \omega t} dt|^2$")
