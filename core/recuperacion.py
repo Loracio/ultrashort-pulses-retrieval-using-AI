@@ -210,6 +210,7 @@ class GPA_retriever(retrieverBase):
             
             if self.R < self.solucion_minimo_error[1]:
                 self.solucion_minimo_error[0] = self.campo.copy()
+                self.solucion_minimo_error[1] = self.R
                 
             print(f'n={niter+1}, R={self.R}')
             niter += 1
@@ -386,12 +387,11 @@ class GPA_retriever(retrieverBase):
         # Si el valor absoluto de un elemento es nulo, tomamos el cociente como la unidad
         absSmn = np.abs(self.Smn)
         f = (absSmn > 0.0)
-        self.Smn_siguiente[~f] = np.sqrt(self.Tmn_medido[~f] + 0.0j)
-        self.Smn_siguiente[f] = self.Smn[f] / absSmn[f] * np.sqrt(self.Tmn_medido[f] + 0.0j)
+        self.Smn_siguiente[~f] = np.sqrt((self.Tmn_medido[~f] + 0.0j) / self.μ)
+        self.Smn_siguiente[f] = self.Smn[f] / absSmn[f] * np.sqrt((self.Tmn_medido[f] + 0.0j) / self.μ)
 
         for τ in range(self.M):
-            self.Smk_siguiente[τ][:] = np.sqrt(1/self.μ) * IDFT(self.Smn_siguiente[τ][:], self.t, self.Δt, self.ω, self.Δω, s_j_conj=self.s_j_conj, r_n_conj=self.r_n_conj)
-        
+            self.Smk_siguiente[τ][:] = IDFT(self.Smn_siguiente[τ][:], self.t, self.Δt, self.ω, self.Δω, s_j_conj=self.s_j_conj, r_n_conj=self.r_n_conj)
 
     def calcula_campo_siguiente(self):
         """
@@ -477,5 +477,12 @@ class GPA_retriever(retrieverBase):
         self.ax[1][1].set_xlabel("Frecuencia (1/ps)")
         self.ax[1][1].set_ylabel("Retraso (ps)")
         self.ax[1][1].set_title("Traza del pulso recuperado")
+
+        plt.subplots_ajust(top=0.97,
+                           bottom=0.055,
+                           left=0.05,
+                           right=0.96,
+                           hspace=0.2,
+                           wspace=0.2)
 
         return self.fig, self.ax
