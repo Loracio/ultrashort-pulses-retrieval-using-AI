@@ -143,3 +143,5 @@ def plot_traza(t, Δt, pulso, frecuencias, espectro, TBP=None):
     ax3.set_xlabel("Frecuencia (1/ps)")
     ax3.set_ylabel("Retraso (ps)")
     ax3.set_title(r"$\tilde{T}(\omega, \tau) = |\int_{-\infty}^{\infty} E(t)E(t - \tau) \exp^{- i \omega t} dt|^2$")
+
+    return fig, [ax1, ax2, ax3]

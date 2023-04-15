@@ -6,42 +6,39 @@ from core import *
 plt.rcParams.update({'font.size': 14}) # Tamaño de la fuente del plot
 
 if __name__ == '__main__':
-    np.random.seed(0)
+    # np.random.seed(0)
 
     # Parámetros de la medida
-    numero_de_muestras = 256
-    duracion_temporal = 10 # Tiempo total de medida de la señal (ps)
+    numero_de_muestras = 512
+    duracion_temporal = 1 # Tiempo total de medida de la señal (ps)
     frecuencia_muestreo = numero_de_muestras / duracion_temporal # En THz
 
-    λ_0 = 1.55 # Longitud de onda de ejemplo (en micrómetros)
-    ω_0 = 2 * np.pi * constants.c * 1e-12 / (λ_0 * 1e-6) # Frecuencia central del pulso (rad / ps)
-
-    TBP = 2.501
+    TBP = 2.75
 
     t, Δt = np.linspace(-duracion_temporal/2, duracion_temporal/2, num=numero_de_muestras, retstep=True) # Vector de tiempos. Guardamos la separación entre datos (inversa de la frecuencia de muestreo)
+    frecuencias = frecuencias_DFT(numero_de_muestras, Δt)
+    ω = convertir(frecuencias, 'f', 'ω')
+    Δω = 2 * np.pi / (numero_de_muestras * Δt)
 
     # Creamos pulso aleatorio con TBP especificado
     pulso, espectro = pulso_aleatorio(t, Δt, numero_de_muestras, TBP)
     # pulso_candidato, espectro_candidato = pulso_aleatorio(t, Δt, numero_de_muestras, TBP)
 
-    #! Prueba
-    # fase = np.exp(2j * np.pi * np.random.rand(N))
-    # espectro = filtro_espectral * fase
-    # pulso_candidato = IDFT(espectro, t, Δt, ω, Δω)
-
-    fwhm = 1
+    # Pulso candidato como gaussiana con fase aleatoria
+    fwhm = 5e-2
     phase_max = 0.3 * np.pi
     sigma = 0.5 * fwhm / np.sqrt(np.log(2.0))
     phase = np.exp(1.0j * np.random.uniform(-phase_max, phase_max, numero_de_muestras))
     d = t / sigma
+
     pulso_candidato = np.exp(-0.5 * d * d) * phase
-    pulso_candidato /= np.max(pulso_candidato)
+    espectro_candidato = DFT(pulso_candidato, t, Δt, ω, Δω)
 
-    # fig0, ax0 = plot_real_imag(t, pulso_candidato)
-    # plt.show()
+    # Plot intensidad y traza original
+    fig0, ax0 = plot_traza(t, Δt, pulso_candidato, frecuencias, espectro_candidato)
 
-    retriever = GPA_retriever(t, Δt, pulso, espectro=espectro)
-    retrieved_field, retrieved_spectrum = retriever.recuperacion(pulso_candidato, 1e-7, max_iter=2000)
+    retriever = GPA_retriever(t, Δt, pulso)
+    retrieved_field, retrieved_spectrum = retriever.recuperacion(pulso_candidato, 1e-10, max_iter=200)
     fig, ax = retriever.plot()
 
     plt.show()

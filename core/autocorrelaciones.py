@@ -1,149 +1,37 @@
+"""
+En este módulo se encuentran las diferentes funciones utilizadas para calcular
+autocorrelaciones entre pulsos, además de la función que calcula la traza de un
+pulso.
+
+Incluye:
+    - trapecio : realiza integración numérica por el método del trapecio.
+
+    - autocorrelacion_2orden : calcula la autocorrelacion de segundo orden
+                               desplazando los valores de la función pasada
+
+    - autocorrelacion_3orden : calcula la autocorrelacion de tercer orden
+                               desplazando los valores de la función pasada
+
+    - autocorrelacion_interferometrica : calcula la autocorrelacion interferométrica
+                               desplazando los valores de la función pasada
+
+    - traza : calcula la traza de un pulso.
+
+Además de las siguientes funciones 'legacy', empleadas para las animaciones de autocorrelación:
+
+    - autocorrelacion_2orden_naive : calcula la autocorrelacion de segundo orden
+                                     calculando los valores de la función desplazada
+
+    - autocorrelacion_2orden_naive : calcula la autocorrelacion de tercer orden
+                                     calculando los valores de la función desplazada   
+
+    - autocorrelacion_3orden_naive : calcula la autocorrelacion interferométrica
+                                     calculando los valores de la función desplazada
+"""
+
 import numpy as np
 from .fourier import *
 from .unidades import *
-
-def autocorrelacion_2orden_naive(delays, Δt, funcion, tiempos, *args):
-    """
-    Calcula la autocorrelacion de segundo orden para una funcion dada.
-        A⁽²⁾(τ) = ∫f(t)f(t-τ) dt
-    
-    Utilizando integración numérica por el método del trapecio. Es decir:
-        A⁽²⁾(τ) = ∑ⱼ₌₀ᴺ⁻¹ f(tⱼ)f(tⱼ - τ) Δt
-
-    Para ello, deberemos especificar para qué valores de retrasos (delays)
-    queremos evaluar la función, y el espaciado temporal de los valores de
-    nuestra función, que dependerá del tiempo (y de otras variables).
-
-    Para poder hacer esta función 'de propósito general' y poder utilizarla
-    con diversas funciones, el único argumento requerido es el vector de tiempos
-    donde se evaluará la función. Si la función sobre la que queremos calcular la
-    autocorrelación depende de más parámetros, deberemos pasarlos como argumentos
-    en el orden en el que aparecen en la definición de nuestra función, justo después
-    del argumento del vector de tiempos.
-
-    Por ejemplo si tenemos una función que depende de (t0, A, τ, ω_0, φ) además
-    del tiempo, deberemos de llamar a esta función como:
-        autocorrelacion_2orden_naive(delays, Δt, funcion, tiempos, t0, A, τ, ω_0, φ)
-
-    De esta manera internamente se podrá evaluar la función para los distintos retardos
-    en los que queremos obtener el valor de la autocorrelación y así poder realizar el
-    cálculo de la integral.
-    
-    Args:
-        delays (np.ndarray): vector con los retardos en los que queremos evaluar la autocorrelación.
-        Δt (float): espaciado del vector de tiempos
-        tiempos (np.ndarray): vector de tiempos
-        funcion (función): función sobre la que queremos calcular la autocorrelación
-        *args : argumentos extra de la función (opcional).
-
-    Returns:
-        A_2: valores de la función de autocorrelación de segundo orden
-    """
-    A_2 = np.zeros(np.size(delays))
-
-    valores = funcion(tiempos, *args)
-
-    for i, τ in enumerate(delays):
-        valores_retardo = funcion(tiempos - τ, *args)
-        A_2[i] = trapecio(valores * valores_retardo, Δt)
-
-    return A_2
-
-
-def autocorrelacion_3orden_naive(delays, Δt, funcion, tiempos, *args):
-    """
-    Calcula la autocorrelacion de segundo orden para una funcion dada.
-        A⁽³⁾(τ) = ∫f(t)f²(t-τ) dt
-    
-    Utilizando integración numérica por el método del trapecio. Es decir:
-        A⁽³⁾(τ) = ∑ⱼ₌₀ᴺ⁻¹ f(tⱼ)f²(tⱼ - τ) Δt
-
-    Para ello, deberemos especificar para qué valores de retrasos (delays)
-    queremos evaluar la función, y el espaciado temporal de los valores de
-    nuestra función, que dependerá del tiempo (y de otras variables).
-
-    Para poder hacer esta función 'de propósito general' y poder utilizarla
-    con diversas funciones, el único argumento requerido es el vector de tiempos
-    donde se evaluará la función. Si la función sobre la que queremos calcular la
-    autocorrelación depende de más parámetros, deberemos pasarlos como argumentos
-    en el orden en el que aparecen en la definición de nuestra función, justo después
-    del argumento del vector de tiempos.
-
-    Por ejemplo si tenemos una función que depende de (t0, A, τ, ω_0, φ) además
-    del tiempo, deberemos de llamar a esta función como:
-        autocorrelacion_3orden_naive(delays, Δt, funcion, tiempos, t0, A, τ, ω_0, φ)
-
-    De esta manera internamente se podrá evaluar la función para los distintos retardos
-    en los que queremos obtener el valor de la autocorrelación y así poder realizar el
-    cálculo de la integral.
-    
-    Args:
-        delays (np.ndarray): vector con los retardos en los que queremos evaluar la autocorrelación.
-        Δt (float): espaciado del vector de tiempos
-        tiempos (np.ndarray): vector de tiempos
-        funcion (función): función sobre la que queremos calcular la autocorrelación
-        *args : argumentos extra de la función (opcional).
-
-    Returns:
-        A_3: valores de la función de autocorrelación de tercer orden
-    """
-    A_3 = np.zeros(np.size(delays))
-
-    valores = funcion(tiempos, *args)
-
-    for i, τ in enumerate(delays):
-        valores_retardo = funcion(tiempos - τ, *args)
-        A_3[i] = trapecio(valores * valores_retardo**2, Δt)
-
-    return A_3
-
-def autocorrelacion_interferometrica_naive(delays, Δt, funcion, tiempos, *args):
-    """
-    Calcula la autocorrelacion interferométrica:
-        IA(τ) = ∫|[f(t) + f(t-τ)]²|² dt
-    
-    Utilizando integración numérica por el método del trapecio. Es decir:
-        IA(τ) = ∑ⱼ₌₀ᴺ⁻¹ [f(tⱼ) + f(tⱼ-τ)]²|² Δt
-
-    Para ello, deberemos especificar para qué valores de retrasos (delays)
-    queremos evaluar la función, y el espaciado temporal de los valores de
-    nuestra función, que dependerá del tiempo (y de otras variables).
-
-    Para poder hacer esta función 'de propósito general' y poder utilizarla
-    con diversas funciones, el único argumento requerido es el vector de tiempos
-    donde se evaluará la función. Si la función sobre la que queremos calcular la
-    autocorrelación depende de más parámetros, deberemos pasarlos como argumentos
-    en el orden en el que aparecen en la definición de nuestra función, justo después
-    del argumento del vector de tiempos.
-
-    Por ejemplo si tenemos una función que depende de (t0, A, τ, ω_0, φ) además
-    del tiempo, deberemos de llamar a esta función como:
-        autocorrelacion_interferometrica_naive(delays, Δt, funcion, tiempos, t0, A, τ, ω_0, φ)
-
-    De esta manera internamente se podrá evaluar la función para los distintos retardos
-    en los que queremos obtener el valor de la autocorrelación y así poder realizar el
-    cálculo de la integral.
-    
-    Args:
-        delays (np.ndarray): vector con los retardos en los que queremos evaluar la autocorrelación.
-        Δt (float): espaciado del vector de tiempos
-        tiempos (np.ndarray): vector de tiempos
-        funcion (función): función sobre la que queremos calcular la autocorrelación
-        *args : argumentos extra de la función (opcional).
-
-    Returns:
-        FRAC: valores de la función de autocorrelación "FRAC"
-    """
-    IA = np.zeros(np.size(delays))
-
-    valores = funcion(tiempos, *args)
-
-    for i, τ in enumerate(delays):
-        valores_retardo = funcion(tiempos - τ, *args)
-        IA[i] = trapecio(np.abs((valores + valores_retardo)**2)**2, Δt)
-
-    return IA
-
 
 def trapecio(func_vals, h):
     """
@@ -340,3 +228,152 @@ def traza(E, t, Δt, N):
         T[:][N + τ] = np.abs(DFT(valores_integrando, t, Δt, ω, Δω))**2
 
     return T
+
+
+#! #########################################################################################################################
+"""
+Funciones 'legacy' (de código antiguo) para realizar las animaciones de autocorrelación.
+"""
+#! #########################################################################################################################
+
+def autocorrelacion_2orden_naive(delays, Δt, funcion, tiempos, *args):
+    """
+    Calcula la autocorrelacion de segundo orden para una funcion dada.
+        A⁽²⁾(τ) = ∫f(t)f(t-τ) dt
+    
+    Utilizando integración numérica por el método del trapecio. Es decir:
+        A⁽²⁾(τ) = ∑ⱼ₌₀ᴺ⁻¹ f(tⱼ)f(tⱼ - τ) Δt
+
+    Para ello, deberemos especificar para qué valores de retrasos (delays)
+    queremos evaluar la función, y el espaciado temporal de los valores de
+    nuestra función, que dependerá del tiempo (y de otras variables).
+
+    Para poder hacer esta función 'de propósito general' y poder utilizarla
+    con diversas funciones, el único argumento requerido es el vector de tiempos
+    donde se evaluará la función. Si la función sobre la que queremos calcular la
+    autocorrelación depende de más parámetros, deberemos pasarlos como argumentos
+    en el orden en el que aparecen en la definición de nuestra función, justo después
+    del argumento del vector de tiempos.
+
+    Por ejemplo si tenemos una función que depende de (t0, A, τ, ω_0, φ) además
+    del tiempo, deberemos de llamar a esta función como:
+        autocorrelacion_2orden_naive(delays, Δt, funcion, tiempos, t0, A, τ, ω_0, φ)
+
+    De esta manera internamente se podrá evaluar la función para los distintos retardos
+    en los que queremos obtener el valor de la autocorrelación y así poder realizar el
+    cálculo de la integral.
+    
+    Args:
+        delays (np.ndarray): vector con los retardos en los que queremos evaluar la autocorrelación.
+        Δt (float): espaciado del vector de tiempos
+        tiempos (np.ndarray): vector de tiempos
+        funcion (función): función sobre la que queremos calcular la autocorrelación
+        *args : argumentos extra de la función (opcional).
+
+    Returns:
+        A_2: valores de la función de autocorrelación de segundo orden
+    """
+    A_2 = np.zeros(np.size(delays))
+
+    valores = funcion(tiempos, *args)
+
+    for i, τ in enumerate(delays):
+        valores_retardo = funcion(tiempos - τ, *args)
+        A_2[i] = trapecio(valores * valores_retardo, Δt)
+
+    return A_2
+
+
+def autocorrelacion_3orden_naive(delays, Δt, funcion, tiempos, *args):
+    """
+    Calcula la autocorrelacion de segundo orden para una funcion dada.
+        A⁽³⁾(τ) = ∫f(t)f²(t-τ) dt
+    
+    Utilizando integración numérica por el método del trapecio. Es decir:
+        A⁽³⁾(τ) = ∑ⱼ₌₀ᴺ⁻¹ f(tⱼ)f²(tⱼ - τ) Δt
+
+    Para ello, deberemos especificar para qué valores de retrasos (delays)
+    queremos evaluar la función, y el espaciado temporal de los valores de
+    nuestra función, que dependerá del tiempo (y de otras variables).
+
+    Para poder hacer esta función 'de propósito general' y poder utilizarla
+    con diversas funciones, el único argumento requerido es el vector de tiempos
+    donde se evaluará la función. Si la función sobre la que queremos calcular la
+    autocorrelación depende de más parámetros, deberemos pasarlos como argumentos
+    en el orden en el que aparecen en la definición de nuestra función, justo después
+    del argumento del vector de tiempos.
+
+    Por ejemplo si tenemos una función que depende de (t0, A, τ, ω_0, φ) además
+    del tiempo, deberemos de llamar a esta función como:
+        autocorrelacion_3orden_naive(delays, Δt, funcion, tiempos, t0, A, τ, ω_0, φ)
+
+    De esta manera internamente se podrá evaluar la función para los distintos retardos
+    en los que queremos obtener el valor de la autocorrelación y así poder realizar el
+    cálculo de la integral.
+    
+    Args:
+        delays (np.ndarray): vector con los retardos en los que queremos evaluar la autocorrelación.
+        Δt (float): espaciado del vector de tiempos
+        tiempos (np.ndarray): vector de tiempos
+        funcion (función): función sobre la que queremos calcular la autocorrelación
+        *args : argumentos extra de la función (opcional).
+
+    Returns:
+        A_3: valores de la función de autocorrelación de tercer orden
+    """
+    A_3 = np.zeros(np.size(delays))
+
+    valores = funcion(tiempos, *args)
+
+    for i, τ in enumerate(delays):
+        valores_retardo = funcion(tiempos - τ, *args)
+        A_3[i] = trapecio(valores * valores_retardo**2, Δt)
+
+    return A_3
+
+def autocorrelacion_interferometrica_naive(delays, Δt, funcion, tiempos, *args):
+    """
+    Calcula la autocorrelacion interferométrica:
+        IA(τ) = ∫|[f(t) + f(t-τ)]²|² dt
+    
+    Utilizando integración numérica por el método del trapecio. Es decir:
+        IA(τ) = ∑ⱼ₌₀ᴺ⁻¹ [f(tⱼ) + f(tⱼ-τ)]²|² Δt
+
+    Para ello, deberemos especificar para qué valores de retrasos (delays)
+    queremos evaluar la función, y el espaciado temporal de los valores de
+    nuestra función, que dependerá del tiempo (y de otras variables).
+
+    Para poder hacer esta función 'de propósito general' y poder utilizarla
+    con diversas funciones, el único argumento requerido es el vector de tiempos
+    donde se evaluará la función. Si la función sobre la que queremos calcular la
+    autocorrelación depende de más parámetros, deberemos pasarlos como argumentos
+    en el orden en el que aparecen en la definición de nuestra función, justo después
+    del argumento del vector de tiempos.
+
+    Por ejemplo si tenemos una función que depende de (t0, A, τ, ω_0, φ) además
+    del tiempo, deberemos de llamar a esta función como:
+        autocorrelacion_interferometrica_naive(delays, Δt, funcion, tiempos, t0, A, τ, ω_0, φ)
+
+    De esta manera internamente se podrá evaluar la función para los distintos retardos
+    en los que queremos obtener el valor de la autocorrelación y así poder realizar el
+    cálculo de la integral.
+    
+    Args:
+        delays (np.ndarray): vector con los retardos en los que queremos evaluar la autocorrelación.
+        Δt (float): espaciado del vector de tiempos
+        tiempos (np.ndarray): vector de tiempos
+        funcion (función): función sobre la que queremos calcular la autocorrelación
+        *args : argumentos extra de la función (opcional).
+
+    Returns:
+        FRAC: valores de la función de autocorrelación "FRAC"
+    """
+    IA = np.zeros(np.size(delays))
+
+    valores = funcion(tiempos, *args)
+
+    for i, τ in enumerate(delays):
+        valores_retardo = funcion(tiempos - τ, *args)
+        IA[i] = trapecio(np.abs((valores + valores_retardo)**2)**2, Δt)
+
+    return IA
