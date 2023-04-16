@@ -18,7 +18,7 @@ def pulso_gaussiano(t, t0, A, τ, ω_0, φ):
     FHWM es la anchura a media altura (full width half maximum).
 
     La envolvente viene modulada por un término exponencial complejo que depende de la frecuencia central de la onda,
-    de manera que el pulso vendrá dado por el producto de la envolvente y esta exponeFourier Transform of Gaussian Modulated Functionncial, además del producto
+    de manera que el pulso vendrá dado por el producto de la envolvente y esta exponencial, además del producto
     con la exponencial compleja que lleva la fase de la envolvente de la onda portadora.
 
     E(t) = E_envolvente * exp(i * ω_0 * t) * exp(i * φ(t)) = A * exp(-(t - t₀)² / 2*τ) * exp(i * ( ω_0 * t + φ(t) ) )
