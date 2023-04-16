@@ -312,8 +312,8 @@ class GPA_retriever(retrieverBase):
 
         Donde hacemos cero los términos donde la suma o resta de índices estén fuera de rango.
         Esta forma de calcular de gradiente parece errónea, pues no proporciona buenas soluciones en
-        comparación a escoger condiciones cíclicas. Probablemente sea porque no es correcto hacer cero
-        dichos términos.
+        comparación a escoger condiciones cíclicas, la cual da un gradiente mayor, y el error en la
+        traza se minimiza antes.
         """
         ΔSmj = self.Smk_siguiente - self.Smk
 
@@ -387,8 +387,15 @@ class GPA_retriever(retrieverBase):
         # Si el valor absoluto de un elemento es nulo, tomamos el cociente como la unidad
         absSmn = np.abs(self.Smn)
         f = (absSmn > 0.0)
-        self.Smn_siguiente[~f] = np.sqrt((self.Tmn_medido[~f] + 0.0j) / self.μ)
-        self.Smn_siguiente[f] = self.Smn[f] / absSmn[f] * np.sqrt((self.Tmn_medido[f] + 0.0j) / self.μ)
+        """
+        Atención: en el artículo original de Trebino sobre el método GPA, no se realiza la división
+        entre el factor μ en este caso. Si decidimos hacerla, el pulso obtenido presentará una ambigüedad
+        extra en el factor de escala, ya que esto 'se lo carga'
+        """
+        # self.Smn_siguiente[~f] = np.sqrt((self.Tmn_medido[~f] + 0.0j) / self.μ)
+        # self.Smn_siguiente[f] = self.Smn[f] / absSmn[f] * np.sqrt((self.Tmn_medido[f] + 0.0j) / self.μ)
+        self.Smn_siguiente[~f] = np.sqrt((self.Tmn_medido[~f] + 0.0j))
+        self.Smn_siguiente[f] = self.Smn[f] / absSmn[f] * np.sqrt((self.Tmn_medido[f] + 0.0j))
 
         for τ in range(self.M):
             self.Smk_siguiente[τ][:] = IDFT(self.Smn_siguiente[τ][:], self.t, self.Δt, self.ω, self.Δω, s_j_conj=self.s_j_conj, r_n_conj=self.r_n_conj)
@@ -478,7 +485,7 @@ class GPA_retriever(retrieverBase):
         self.ax[1][1].set_ylabel("Retraso (ps)")
         self.ax[1][1].set_title("Traza del pulso recuperado")
 
-        plt.subplots_ajust(top=0.97,
+        plt.subplots_adjust(top=0.97,
                            bottom=0.055,
                            left=0.05,
                            right=0.96,
@@ -486,3 +493,41 @@ class GPA_retriever(retrieverBase):
                            wspace=0.2)
 
         return self.fig, self.ax
+
+
+class PCGPA_retriever(retrieverBase):
+    """
+    Clase para utilizar el método de componentes principales de proyecciones generalizadas (PCGPA) para reconstuir un pulso
+    a partir de su traza, partiendo de un pulso candidato. 
+    
+    El método PCGPA consiste en los siguientes pasos:
+
+        - Paso 1 : proyección sobre Sₘₖ. Se calcula el nuevo valor del operador señal del pulso candidato, S'ₘₖ, realizando
+                        una proyección sobre el conjunto de pulsos que satisface que Sₘₖ = ℱ⁻¹{√Tₘₙᵐᵉᵃˢ}, por lo que se realiza
+                        la siguiente proyección: S'ₘₖ = μ⁻½ ℱ⁻¹{Sₘₙ / |Sₘₙ|  · √Tₘₙᵐᵉᵃˢ}
+
+        - Paso 2 : actualización del campo eléctrico, E, utilizando las opopiedades de la estructura algebraica de la traza FROG.
+                   Para ello, debemos calcular la forma 'de producto exterior' de Sₘₖ, revirtiendo yhaciendo un shifteo circular
+                   de k en la columna k-ésima, de manera que Ŝₘₖ = EₘEₖ. Para actualizar E, se realizan las siguientes dos operaciones:
+                       Eₖ -> ∑ₖ (Ŝₘₖ)* · Eₖ
+                       Eₖ -> ∑ₖ Eₖ* / (∑ₖ|Eₖ|²)½
+
+        - Paso 3 : calculo de los nuevos parámetros para la siguiente iteración y error en la traza del pulso. Se calculan
+                    los nuevos valores del operador señal y la traza del pulso candidato obtenido por descenso de gradiente
+                    en el paso 2. Se calcula el error de la traza R, y si se satisface la condición de convergencia o se llega
+                    al máximo de iteraciones se para el algoritmo. En caso contrario, se vuelve al paso 1.
+
+    Args:
+            t (np.ndarray): array de tiempos equiespaciados Δt
+            pulso (np.ndarray[np.complex128]): array con el campo eléctrico del pulso a recuperar
+            espectro (np.ndarray[np.complex128], opcional): array con el espectro del pulso a recuperar
+    """
+
+    def __init__(self, t, Δt, pulso, *, espectro=None):
+        """
+        Llama a la inicialización de los parámetros necesarios para realizar la
+        recuperación del pulso: el valor de la traza experimental del pulso,
+        el array de frecuencias para realizar saltos entre dominio temporal y frecuencial,
+        los factores de fase de las transformadas de Fourier.
+        """
+        super().__init__(t, Δt, pulso, espectro=espectro)
