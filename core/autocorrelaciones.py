@@ -208,11 +208,10 @@ def traza(E, t, Δt, N):
     Devuelve:
         T (np.meshgrid): valores de la traza en cada uno de los puntos de la malla (ω, τ)
     """
-    delays = np.linspace(-(N - 1) * Δt, (N - 1) * Δt, num=2 * N - 1)
     ω = convertir(frecuencias_DFT(N, Δt), 'frecuencia', 'frecuencia angular')
     Δω = 2 * np.pi / (N * Δt) # Relación de reciprocidad Δt Δω = 2π/N
 
-    T = np.zeros((delays.size, ω.size))
+    T = np.zeros((2*N - 1, N), dtype=np.float64)
 
     # Calculamos el valor de E(t)*E(t - τ) y lo pasamos como argumento para hacer la transformada de Fourier
     valores_integrando = np.zeros(N, dtype=E.dtype)
