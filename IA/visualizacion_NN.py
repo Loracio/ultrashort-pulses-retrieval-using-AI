@@ -25,7 +25,7 @@ class visualizador_resultados():
     mucho en este código, simplemente lo he escrito rápido para tener una forma cómoda
     de ver los datos.
     """
-    def __init__(self, t, Δt, N, NUMERO_PULSOS, direccion_archivo, direccion_modelo):
+    def __init__(self, t, Δt, N, NUMERO_PULSOS, direccion_archivo, direccion_modelo, conv=False):
         self.t = t
         self.Δt = Δt
         self.N = self.t.size
@@ -45,6 +45,8 @@ class visualizador_resultados():
         self.model = tf.keras.models.load_model(self.direccion_modelo)
 
         self.TBP, self.campos_concat, self.T = formateador(self.direccion_archivo, self.N, self.NUMERO_PULSOS)
+        if conv:
+            self.campos_concat = self.campos_concat.reshape((self.NUMERO_PULSOS, self.N, 2, 1))
         self.T_pred = self.model.predict(self.campos_concat)
 
         self.errores_traza = np.zeros(self.NUMERO_PULSOS)
@@ -162,7 +164,7 @@ class visualizador_resultados():
         self.ax2.set_ylabel("Retraso (ps)")
         self.ax2.set_title("Diferencia")
 
-        self.fig.suptitle(f"TBP = {self.TBP[0]}      Error en la traza = {self.errores_traza[0]:.2E}", fontweight='bold')
+        self.fig.suptitle(f"TBP = {self.TBP[0]:.2f}      Error en la traza = {self.errores_traza[0]:.2E}", fontweight='bold')
 
 
     def display_random(self, event):
@@ -290,7 +292,7 @@ class visualizador_resultados():
                 self.im0.set_clim(np.min(self.T[self.random_index_order[self.last_index]].reshape(2*N - 1, N)), np.max(self.T[self.random_index_order[self.last_index]].reshape(2*N - 1, N)))
 
                 self.im1.set_array(self.T_pred[self.random_index_order[self.last_index]].reshape(2*N - 1, N))
-                self.im1.set_clim(np.min(self.T_pred[self.best_index_order[self.last_index]]), np.max(self.T_pred[self.best_index_order[self.last_index]]))
+                self.im1.set_clim(np.min(self.T_pred[self.random_index_order[self.last_index]]), np.max(self.T_pred[self.random_index_order[self.last_index]]))
 
                 diff = np.abs(self.T[self.random_index_order[self.last_index]] - self.T_pred[self.random_index_order[self.last_index]]).reshape(2*N - 1, N)
                 self.im2.set_array(diff)
@@ -334,17 +336,42 @@ class visualizador_resultados():
 if __name__ == '__main__':
 
     N = 128
-    NUMERO_PULSOS = 1000
+    NUMERO_PULSOS = 200
 
     duracion_temporal = 1 # Tiempo total de medida de los pulsos de la base de datos (ps)
     t, Δt = np.linspace(-duracion_temporal/2, duracion_temporal/2, num=N, retstep=True)
 
     # Ruta al fichero de la base de datos
     direccion_archivo = f"./IA/DataBase/{NUMERO_PULSOS}_pulsos_aleatorios_N{N}.csv"
-    direccion_modelo = "./IA/NN_models/pulse_trace_model.h5"
 
-    ver = visualizador_resultados(t, Δt, N, NUMERO_PULSOS, direccion_archivo, direccion_modelo)
-    ver.model_summary()
-    ver.plot()
+    """
+    Vamos a ver los resultados de una red muy simple,
+    construida con una única capa densa de 64 neuronas
+    """
+
+    direccion_modelo = "./IA/NN_models/pulse_trace_model_simple_dense.h5"
+
+    ver_densa = visualizador_resultados(t, Δt, N, NUMERO_PULSOS, direccion_archivo, direccion_modelo, conv=False)
+    ver_densa.model_summary()
+    ver_densa.plot()
+
+    print(f"Error medio en la traza: {np.mean(ver_densa.errores_traza)}")
+    print(f"Desviación: {np.std(ver_densa.errores_traza)} (contiene términos infinitos)")
+
+    plt.show()
+
+    """
+    Comparamos los resultados con una capa que contiene capas
+    convolucionales
+    """
+
+    direccion_modelo = "./IA/NN_models/pulse_trace_model_convolucional.h5"
+
+    ver_convolucional = visualizador_resultados(t, Δt, N, NUMERO_PULSOS, direccion_archivo, direccion_modelo, conv=True)
+    ver_convolucional.model_summary()
+    ver_convolucional.plot()
+
+    print(f"Error medio en la traza: {np.mean(ver_convolucional.errores_traza)}")
+    print(f"Desviación: {np.std(ver_convolucional.errores_traza)}")
 
     plt.show()
