@@ -29,7 +29,7 @@ def preprocesamiento(fila, N):
     columns = tf.strings.split(fila, sep=',')
 
     # Valor TBP del pulso
-    # TBP = tf.strings.to_number(columns[0]) #! Nos da igual, por eso lo dejo comentado
+    TBP = tf.strings.to_number(columns[0])
 
     # Valores de la parte real del campo eléctrico
     E_r = tf.strings.to_number(columns[1:(N+1)])
@@ -42,7 +42,7 @@ def preprocesamiento(fila, N):
     # Valores de la traza
     T = tf.strings.to_number(columns[(2*N + 1):], out_type=tf.float32)
 
-    return concat_Er_Ei, T
+    return TBP, concat_Er_Ei, T
 
 def wrapper_preprocesamiento(N):
     def wrapper_fn(row):
@@ -63,15 +63,17 @@ def dataset_to_numpy(ds, N, NUMERO_PULSOS):
     Devuelve:
         x, y (np.array): arrays con la información de los tensores de entrada y salida
     """
+    TBP = np.zeros(NUMERO_PULSOS)
     x = np.zeros((NUMERO_PULSOS, 2*N))
     y = np.zeros((NUMERO_PULSOS, (2*N - 1) * N))
     for i, example in enumerate(ds):
-        x[i][:] = example[0].numpy()
-        y[i][:] = example[1].numpy()
+        TBP[i] = example[0].numpy()
+        x[i][:] = example[1].numpy()
+        y[i][:] = example[2].numpy()
 
-    return x, y
+    return TBP, x, y
 
-def formateador(direccion_archivo, N, NUMERO_PULSOS, buffer_size=None):
+def formateador(direccion_archivo, N, NUMERO_PULSOS, buffer_size=None, shuffle=False):
     """
     Lee y formatea los datos de la base de datos proporcionada, devolviéndolos
     en formato np.array con los tenores de entrada y de salida.
@@ -95,8 +97,9 @@ def formateador(direccion_archivo, N, NUMERO_PULSOS, buffer_size=None):
     # No leemos la cabecera del archivo, que contiene el contenido de la columna
     dataset = dataset.skip(1)
 
-    # Mezclamos aleatoriamente los pulsos
-    dataset = dataset.shuffle(buffer_size=buffer_size)
+    if shuffle:
+        # Mezclamos aleatoriamente los pulsos
+        dataset = dataset.shuffle(buffer_size=buffer_size)
 
     # Aplicamos el preprocesamiento a cada fila
     dataset = dataset.map(wrapper_preprocesamiento(N))
@@ -111,7 +114,7 @@ if __name__ == '__main__':
     # Ruta al fichero de la base de datos
     direccion_archivo = f"./IA/DataBase/{NUMERO_PULSOS}_pulsos_aleatorios_N{N}.csv"
 
-    x, y = formateador(direccion_archivo, N, NUMERO_PULSOS)
+    TBP, x, y = formateador(direccion_archivo, N, NUMERO_PULSOS, shuffle=True)
 
     # Cogemos un elemento del conjunto de datos para ver que todo está bien cargado
 

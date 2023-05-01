@@ -24,10 +24,10 @@ if __name__ == '__main__':
     direccion_archivo = f"./IA/DataBase/{NUMERO_PULSOS}_pulsos_aleatorios_N{N}.csv"
  
     # Cargamos los datos como np.ararys
-    x, y = formateador(direccion_archivo, N, NUMERO_PULSOS)
+    TBP, x, y = formateador(direccion_archivo, N, NUMERO_PULSOS, shuffle=True)
  
     # Separamos entre conjunto de entrenamiento y validación
-    tamaño_entrenamiento = int(0.8 * NUMERO_PULSOS)
+    tamaño_entrenamiento = int(0.9 * NUMERO_PULSOS)
     tamaño_validacion = NUMERO_PULSOS - tamaño_entrenamiento
 
     print(f"Tamaño del conjunto de entrenamiento: {tamaño_entrenamiento}")
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     BATCH_SIZE = 32
 
     input_shape = (2*N,)
-    hidden_layer_neurons = 40
+    hidden_layer_neurons = 64
     output_neurons = (2*N - 1) * N
 
     # Construcción de la arquitectura
