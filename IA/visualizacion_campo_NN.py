@@ -3,6 +3,11 @@ Este archivo contiene la clase visualizador_resultados,
 con la que podremos ver cómoda e interactivamente los 
 resultados de la traza obtenidos por la NN y compararlos
 con los valores teóricos de las trazas de los pulsos.
+
+Lo que hago es calcular para cada campo obtenido como
+resultado de la red neuronal su traza correspondiente,
+y pintarla frente a la traza real del pulso para ver
+el error.
 """
 
 import tensorflow as tf
@@ -20,10 +25,6 @@ class visualizador_resultados():
     Esta clase tiene como objetivo realizar un plot interactivo en el que se puedan 
     visualizar los resultados del cálculo de la traza de un pulso mediante una NN
     y compararlo con la traza teórica.
-
-    La sintaxis y estructuración no está demasiado trabajada, así que mejor no fijarse
-    mucho en este código, simplemente lo he escrito rápido para tener una forma cómoda
-    de ver los datos.
     """
     def __init__(self, t, Δt, N, NUMERO_PULSOS, direccion_archivo, direccion_modelo, conv=False):
         self.t = t
@@ -46,11 +47,19 @@ class visualizador_resultados():
 
         self.TBP, self.campos_concat, self.T = formateador(self.direccion_archivo, self.N, self.NUMERO_PULSOS)
         if conv:
-            self.campos_concat = self.campos_concat.reshape((self.NUMERO_PULSOS, self.N, 2, 1))
-        self.T_pred = self.model.predict(self.campos_concat)
+            self.T = self.T.reshape((self.NUMERO_PULSOS, 2*self.N - 1, self.N, 1))
+        self.campos_concat_pred = self.model.predict(self.T)
+        self.T = self.T.reshape(self.NUMERO_PULSOS, 2*self.N - 1, self.N)
+        self.T_pred = np.zeros((self.NUMERO_PULSOS, 2*self.N - 1, self.N))
+        self.calcula_trazas_pred()
 
         self.errores_traza = np.zeros(self.NUMERO_PULSOS)
         self.calcula_errores_traza()
+
+    def calcula_trazas_pred(self):
+        for i in range(self.N):
+            pulso = self.campos_concat_pred[i][:self.N] + 1j * self.campos_concat_pred[i][self.N:]
+            self.T_pred[i] = traza(pulso, self.t, self.Δt, self.N)
 
     def calcula_μ(self, indice):
         """
@@ -120,23 +129,27 @@ class visualizador_resultados():
         self.fig, self.ax = plt.subplots()
         self.ax.set_axis_off()
 
-        self.ax0 = plt.axes([.25/4, 0.3, 0.25, 0.5])
-        self.ax1 = plt.axes([(.5/4 + 0.25), 0.3, 0.25, 0.5])
-        self.ax2= plt.axes([(1 - .25/4 - 0.25), 0.3, 0.25, 0.5])
+        self.ax0 = plt.axes([.25/4, 0.1, 0.25, 0.35])
+        self.ax1 = plt.axes([(.5/4 + 0.25), 0.1, 0.25, 0.35])
+        self.ax2 = plt.axes([(1 - .25/4 - 0.25), 0.1, 0.25, 0.35])
+        self.ax3 = plt.axes([(.5/4 + 0.25 - 0.025), 0.55, 0.25, 0.35])
+        self.ax4 = plt.axes([(1 - .25/4 - 0.25), 0.55, 0.25, 0.35])
+        self.twin_ax3 = self.ax3.twinx()
+        self.twin_ax4 = self.ax4.twinx()
 
-        plt.figtext(0.75, 0.2, 'Control visualización', fontweight='bold')
-        self.next_button = Button(plt.axes([0.8, 0.125, 0.075, 0.04]), 'Siguiente', hovercolor='aquamarine', color='lightcyan')
+        plt.figtext(0.1, 0.7, 'Control visualización', fontweight='bold')
+        self.next_button = Button(plt.axes([0.15, 0.6, 0.075, 0.04]), 'Siguiente', hovercolor='aquamarine', color='lightcyan')
         self.next_button.on_clicked(self.next_result)
-        self.prev_button = Button(plt.axes([0.7, 0.125, 0.075, 0.04]), 'Anterior', hovercolor='aquamarine', color='lightcyan')
+        self.prev_button = Button(plt.axes([0.05, 0.6, 0.075, 0.04]), 'Anterior', hovercolor='aquamarine', color='lightcyan')
         self.prev_button.on_clicked(self.prev_result)
 
 
-        plt.figtext(0.3, 0.2, 'Modo visualización', fontweight='bold')
-        self.random_button = Button(plt.axes([0.2, 0.125, 0.075, 0.04]), 'Aleatorio', hovercolor='aquamarine', color='mediumseagreen')
+        plt.figtext(0.1, 0.9, 'Modo visualización', fontweight='bold')
+        self.random_button = Button(plt.axes([0.025, 0.8, 0.075, 0.04]), 'Aleatorio', hovercolor='aquamarine', color='mediumseagreen')
         self.random_button.on_clicked(self.display_random)
-        self.best_button = Button(plt.axes([0.3, 0.125, 0.075, 0.04]), 'Mejores', hovercolor='aquamarine', color='lightgrey')
+        self.best_button = Button(plt.axes([0.125, 0.8, 0.075, 0.04]), 'Mejores', hovercolor='aquamarine', color='lightgrey')
         self.best_button.on_clicked(self.display_best)
-        self.worst_button = Button(plt.axes([0.4, 0.125, 0.075, 0.04]), 'Peores', hovercolor='aquamarine', color='lightgrey')
+        self.worst_button = Button(plt.axes([0.225, 0.8, 0.075, 0.04]), 'Peores', hovercolor='aquamarine', color='lightgrey')
         self.worst_button.on_clicked(self.display_worst)
 
         self.best_index_order = np.argsort(self.errores_traza) # Resultados ordenados de mejor a peor
@@ -165,7 +178,58 @@ class visualizador_resultados():
         self.ax2.set_ylabel("Retraso (ps)")
         self.ax2.set_title("Diferencia")
 
-        self.fig.suptitle(f"TBP = {self.TBP[0]:.2f}      Error en la traza = {self.errores_traza[0]:.2E}", fontweight='bold')
+        pulso_pred = self.campos_concat_pred[0][:self.N] + 1j * self.campos_concat_pred[0][self.N:]
+        I_pulso_pred = np.abs(pulso_pred)**2
+        espectro_pred = DFT(pulso_pred, self.t, self.Δt, self.ω, self.Δω)
+        I_espectro_pred = np.abs(espectro_pred)**2
+
+        pulso_db = self.campos_concat[0][:self.N] + 1j * self.campos_concat[0][self.N:]
+        I_pulso_db = np.abs(pulso_db)**2
+        espectro_db = DFT(pulso_db, self.t, self.Δt, self.ω, self.Δω)
+        I_espectro_db = np.abs(espectro_db)**2
+
+        fase_campo_pred = np.unwrap(np.angle(pulso_pred)) 
+        fase_campo_pred -=  media(fase_campo_pred, I_pulso_pred)
+
+        fase_espectro_pred = np.unwrap(np.angle(espectro_pred)) 
+        fase_espectro_pred -=  media(fase_espectro_pred, I_espectro_pred)
+
+        fase_campo_db = np.unwrap(np.angle(pulso_db)) 
+        fase_campo_db -=  media(fase_campo_db, I_pulso_db)
+
+        fase_espectro_db = np.unwrap(np.angle(espectro_db)) 
+        fase_espectro_db -=  media(fase_espectro_db, I_espectro_db)
+
+
+        self.line_I_pulso_db, = self.ax3.plot(self.t,I_pulso_db / np.max(I_pulso_db), color='blue', linewidth=3, alpha=0.5, label='Intensidad campo base de datos')
+        self.line_fase_campo_db, = self.twin_ax3.plot(self.t, fase_campo_db, '-.', color='red',alpha=0.5)
+        self.ax3.plot(np.nan, '-.', label='Fase', color='red')
+        self.line_I_pulso_pred, = self.ax3.plot(self.t, I_pulso_pred / np.max(I_pulso_pred), color='orange', label='Intensidad campo predicho')
+        self.line_fase_campo_pred, = self.twin_ax3.plot(self.t, fase_campo_pred, '-.', color='violet')
+        self.ax3.plot(np.nan, '-.', label='Fase campo predicho', color='red')
+        self.ax3.set_xlabel("Tiempo (ps)")
+        self.ax3.set_ylabel("Intensidad (u.a.)")
+        self.twin_ax3.set_ylabel("Fase (rad)")
+        self.ax3.set_title("Dominio temporal")
+        self.ax3.grid()
+        self.twin_ax3.set_ylim(-2 * np.pi, 2 * np.pi)
+
+        self.line_I_espectro_db, = self.ax4.plot(self.frecuencias, I_espectro_db / np.max(I_espectro_db), color='blue', linewidth=3, alpha=0.5, label='Intensidad espectral base de datos')
+        self.line_fase_espectro_db, = self.twin_ax4.plot(self.frecuencias, fase_espectro_db, '-.', color='red', alpha=0.5)
+        self.ax4.plot(np.nan, '-.', label='Fase', color='red')
+        self.line_I_espectro_pred, = self.ax4.plot(self.frecuencias, I_espectro_pred / np.max(I_espectro_pred), color='orange', label='Intensidad espectral predicha')
+        self.line_fase_espectro_pred, = self.twin_ax4.plot(self.frecuencias, fase_espectro_pred, '-.', color='violet')
+        self.ax4.plot(np.nan, '-.', label='Fase espectral predicha', color='red')
+        self.ax4.set_xlabel("Frecuencia (1 / ps)")
+        self.ax4.set_ylabel("Intensidad (u.a.)")
+        self.twin_ax4.set_ylabel("Fase (rad)")
+        self.ax4.set_title("Dominio frecuencial")
+        self.ax4.grid()
+        self.twin_ax4.set_ylim(-2 * np.pi, 2 * np.pi)
+
+        self.fig.legend(*self.ax3.get_legend_handles_labels(), loc='upper right', ncols=4)
+
+        self.pulse_info_text = self.fig.text(0.02, 0.95, f"TBP = {self.TBP[0]:.2f}      Error en la traza = {self.errores_traza[0]:.2E}", fontweight='bold')
 
 
     def display_random(self, event):
@@ -248,7 +312,9 @@ class visualizador_resultados():
 
         plt.draw()
 
+
     def update_plot(self):
+
         match self.mode:
             case 'random': i = self.random_index_order[self.last_index]
 
@@ -256,7 +322,7 @@ class visualizador_resultados():
             
             case 'worst': i = self.worst_index_order[self.last_index]
 
-        self.fig.suptitle(f"TBP = {self.TBP[i]:.2f}      Error en la traza = {self.errores_traza[i]:.2E}", fontweight='bold')
+        self.pulse_info_text.set_text(f"TBP = {self.TBP[i]:.2f}      Error en la traza = {self.errores_traza[i]:.2E}")
 
         self.im0.set_array(self.T[i].reshape(2*self.N - 1, self.N) / np.max(self.T[i]) )
         self.im0.set_clim(0, 1)
@@ -268,11 +334,44 @@ class visualizador_resultados():
         else:
             self.im1.set_array(np.zeros((2*self.N - 1, self.N)))
             diff = np.abs(self.T[i] / np.max(self.T[i])).reshape(2*self.N - 1, self.N)
+       
         self.im1.set_clim(0, 1)
 
         self.im2.set_array(diff)
-        self.im2.set_array(diff)
         self.im2.set_clim(np.min(diff), np.max(diff))
+
+        pulso_pred = self.campos_concat_pred[i][:self.N] + 1j * self.campos_concat_pred[i][self.N:]
+        pulso_db = self.campos_concat[i][:self.N] + 1j * self.campos_concat[i][self.N:]
+
+        I_pulso_pred = np.abs(pulso_pred)**2
+        espectro_pred = DFT(pulso_pred, self.t, self.Δt, self.ω, self.Δω)
+        I_espectro_pred = np.abs(espectro_pred)**2
+
+        fase_campo_pred = np.unwrap(np.angle(pulso_pred)) 
+        fase_campo_pred -=  media(fase_campo_pred, I_pulso_pred)
+
+        fase_espectro_pred = np.unwrap(np.angle(espectro_pred)) 
+        fase_espectro_pred -=  media(fase_espectro_pred, I_espectro_pred)
+
+        I_pulso_db = np.abs(pulso_db)**2
+        espectro_db = DFT(pulso_db, self.t, self.Δt, self.ω, self.Δω)
+        I_espectro_db = np.abs(espectro_db)**2
+
+        fase_campo_db = np.unwrap(np.angle(pulso_db)) 
+        fase_campo_db -=  media(fase_campo_db, I_pulso_db)
+
+        fase_espectro_db = np.unwrap(np.angle(espectro_db)) 
+        fase_espectro_db -=  media(fase_espectro_db, I_espectro_db)
+
+        self.line_I_pulso_pred.set_ydata(I_pulso_pred / np.max(I_pulso_pred))
+        self.line_fase_campo_pred.set_ydata(fase_campo_pred)
+        self.line_I_espectro_pred.set_ydata(I_espectro_pred / np.max(I_espectro_pred))
+        self.line_fase_espectro_pred.set_ydata(fase_espectro_pred)
+
+        self.line_I_pulso_db.set_ydata(I_pulso_db / np.max(I_pulso_db))
+        self.line_fase_campo_db.set_ydata(fase_campo_db)
+        self.line_I_espectro_db.set_ydata(I_espectro_db / np.max(I_espectro_db))
+        self.line_fase_espectro_db.set_ydata(fase_espectro_db)
         
 
 if __name__ == '__main__':
@@ -291,14 +390,14 @@ if __name__ == '__main__':
     construida con una única capa densa de 64 neuronas
     """
 
-    direccion_modelo = "./IA/NN_models/pulse_trace_model_simple_dense.h5"
+    direccion_modelo = "./IA/NN_models/campo_model_simple_dense.h5"
 
     ver_densa = visualizador_resultados(t, Δt, N, NUMERO_PULSOS, direccion_archivo, direccion_modelo, conv=False)
     ver_densa.model_summary()
     ver_densa.plot()
 
     print(f"Error medio en la traza: {np.mean(ver_densa.errores_traza)}")
-    print(f"Desviación: {np.std(ver_densa.errores_traza)} (contiene términos infinitos)")
+    print(f"Desviación: {np.std(ver_densa.errores_traza)}")
 
     plt.show()
 
@@ -307,7 +406,7 @@ if __name__ == '__main__':
     convolucionales
     """
 
-    direccion_modelo = "./IA/NN_models/pulse_trace_model_convolucional.h5"
+    direccion_modelo = "./IA/NN_models/campo_model_convolucional.h5"
 
     ver_convolucional = visualizador_resultados(t, Δt, N, NUMERO_PULSOS, direccion_archivo, direccion_modelo, conv=True)
     ver_convolucional.model_summary()

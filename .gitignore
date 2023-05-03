@@ -191,6 +191,5 @@ dkms.conf
 # vs code
 .vscode
 test.py
-1000_pulsos_aleatorios_N128.csv
-1200_pulsos_aleatorios_N256.csv
-5000_pulsos_aleatorios_N128.csv
+*.csv
+*.h5

@@ -7,7 +7,7 @@ para ver los resultados usar el archivo 'visualizacion_NN.py'
 """
 
 from tensorflow.keras import Model
-from tensorflow.keras.layers import Dense, Input, Conv2D, MaxPooling2D, Flatten
+from tensorflow.keras.layers import Dense, Input, Conv2D, MaxPooling2D, Flatten, Dropout
 
 import path_helper # Para poder cargar el módulo de 'core' sin tener que cambiar el path
 from core import *
@@ -18,7 +18,7 @@ from lee_database import formateador
 if __name__ == '__main__':
     # Parámetros lectura
     N = 128
-    NUMERO_PULSOS = 1000
+    NUMERO_PULSOS = 2000
 
     # Ruta al fichero de la base de datos
     direccion_archivo = f"./IA/DataBase/{NUMERO_PULSOS}_pulsos_aleatorios_N{N}.csv"
@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
 
     # Parámetros de la red
-    EPOCHS = 50
+    EPOCHS = 25
     BATCH_SIZE = 32
 
     """
@@ -44,27 +44,27 @@ if __name__ == '__main__':
     e imaginarias del pulso.
     La capa de salida nos dará el vector Tmn en versión 1D.
     """
-    input_shape = (2*N,)
+    # input_shape = (2*N,)
     hidden_layer_neurons = 128
     output_neurons = (2*N - 1) * N
 
-    # Construcción de la arquitectura
-    input_tensor = Input(shape=input_shape ,name='input')
-    hidden_tensor = Dense(hidden_layer_neurons, activation='relu',name='hidden')(input_tensor)  
-    output_tensor = Dense(output_neurons,activation='relu',name='output')(hidden_tensor)               
-    model_dense = Model(input_tensor,output_tensor) 
+    # # Construcción de la arquitectura
+    # input_tensor = Input(shape=input_shape ,name='input')
+    # hidden_tensor = Dense(hidden_layer_neurons, activation='relu',name='hidden')(input_tensor)  
+    # output_tensor = Dense(output_neurons,activation='relu',name='output')(hidden_tensor)               
+    # model_dense = Model(input_tensor,output_tensor) 
 
-    # Compilación del modelo
-    model_dense.compile(loss="mse", optimizer="adam")
+    # # Compilación del modelo
+    # model_dense.compile(loss="mse", optimizer="adam")
 
-    # Mostramos cómo es
-    model_dense.summary()
+    # # Mostramos cómo es
+    # model_dense.summary()
 
-    # Entrenamiento
-    history = model_dense.fit(x[:tamaño_entrenamiento], y[:tamaño_entrenamiento], epochs=EPOCHS, batch_size=BATCH_SIZE, validation_data=(x[tamaño_validacion:], y[tamaño_validacion:]))
+    # # Entrenamiento
+    # history = model_dense.fit(x[:tamaño_entrenamiento], y[:tamaño_entrenamiento], epochs=EPOCHS, batch_size=BATCH_SIZE, validation_data=(x[tamaño_validacion:], y[tamaño_validacion:]))
 
-    # Guardamos el modelo entrenado para ver los resultados
-    model_dense.save("./IA/NN_models/pulse_trace_model_simple_dense.h5")
+    # # Guardamos el modelo entrenado para ver los resultados
+    # model_dense.save("./IA/NN_models/pulse_trace_model_simple_dense.h5")
 
 
     """
@@ -86,16 +86,17 @@ if __name__ == '__main__':
 
     # Construcción de la arquitectura
     input_tensor = Input(shape=input_shape ,name='input')
-    hidden_conv = Conv2D(32, kernel_size=(2, 1),activation='relu')(input_tensor)
+    hidden_conv = Conv2D(64, kernel_size=(2, 1),activation='relu')(input_tensor)
     hidden_maxpool = MaxPooling2D((1,1))(hidden_conv)
-    # hidden_conv_2 = Conv2D(32, kernel_size=(3, 1),activation='relu')(hidden_maxpool)
-    hidden_flatten = Flatten()(hidden_maxpool)
-    hidden_tensor = Dense(hidden_layer_neurons, activation='relu',name='hidden')(hidden_flatten)  
+    hidden_conv_1 = Conv2D(32, kernel_size=(2, 1),activation='relu')(hidden_maxpool)
+    hidden_maxpool_1 = MaxPooling2D((1,1))(hidden_conv_1)
+    hidden_flatten = Flatten()(hidden_conv_1)
+    hidden_tensor = Dense(hidden_layer_neurons, activation='relu',name='hidden')(hidden_flatten) 
     output_tensor = Dense(output_neurons,activation='relu',name='output')(hidden_tensor)               
     model_conv = Model(input_tensor,output_tensor) 
 
     # Compilación del modelo
-    model_conv.compile(loss="mse", optimizer="adam")
+    model_conv.compile(loss="mse", optimizer="adam", metrics=['accuracy'])
 
     # Mostramos cómo es
     model_conv.summary()

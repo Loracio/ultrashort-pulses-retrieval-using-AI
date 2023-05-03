@@ -49,9 +49,9 @@ if __name__ == '__main__':
 
     TBP_inicial = 0.51
     TBP_final = 1.51
-    paso_TBP = 0.05
+    paso_TBP = 0.10
 
-    pulsos_por_TBP = 250
+    pulsos_por_TBP = 200
 
     numero_total_pulsos = int(np.ceil(pulsos_por_TBP * (TBP_final - TBP_inicial) / paso_TBP))
 
