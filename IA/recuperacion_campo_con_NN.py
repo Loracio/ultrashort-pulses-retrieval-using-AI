@@ -11,6 +11,7 @@ para ver los resultados usar el archivo 'visualizacion_campo_NN.py'
 
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Dense, Input, Conv2D, MaxPooling2D, Flatten, Dropout
+from tensorflow.keras.optimizers import Adam, SGD
 
 import path_helper # Para poder cargar el módulo de 'core' sin tener que cambiar el path
 from core import *
@@ -28,6 +29,11 @@ if __name__ == '__main__':
  
     # Cargamos los datos como np.ararys. Formateador devuelve TBP, Traza, Campo
     TBP, y, x = formateador(direccion_archivo, N, NUMERO_PULSOS, shuffle=True, buffer_size=500)
+
+    # Normalizamos las trazas:
+    for i in range(NUMERO_PULSOS):
+        x[i] /= np.max(x)
+        y[i] /= np.max(y)
  
     # Separamos entre conjunto de entrenamiento y validación
     tamaño_entrenamiento = int(0.8 * NUMERO_PULSOS)
@@ -38,7 +44,7 @@ if __name__ == '__main__':
 
 
     # Parámetros de la red
-    EPOCHS = 50
+    EPOCHS = 100
     BATCH_SIZE = 32
 
     """
@@ -47,19 +53,20 @@ if __name__ == '__main__':
     la parte real e imaginaria del campo, una detrás de la otra.
     """
     input_shape = ((2*N -1)*N,)
-    hidden_layer_neurons = 512
+    hidden_layer_neurons = N
     output_neurons = 2 * N
 
     # Construcción de la arquitectura
     input_tensor = Input(shape=input_shape ,name='input')
-    hidden_tensor = Dense(hidden_layer_neurons, activation='relu',name='hidden')(input_tensor)  
-    hidden_tensor_1 = Dense(int(hidden_layer_neurons/2), activation='relu',name='hidden1')(hidden_tensor) 
-    hidden_tensor_2 = Dense(hidden_layer_neurons, activation='relu',name='hidden2')(hidden_tensor_1) 
-    output_tensor = Dense(output_neurons,activation='relu',name='output')(hidden_tensor_2)               
-    model_dense = Model(input_tensor,output_tensor) 
+    hidden_tensor = Dense(hidden_layer_neurons, activation='relu', name='hidden')(input_tensor)
+    hidden_tensor_1 = Dense(int(hidden_layer_neurons/2), activation='relu', name='hidden1')(hidden_tensor)
+    hidden_tensor_2 = Dense(hidden_layer_neurons, activation='relu', name='hidden2')(hidden_tensor_1)
+    output_tensor = Dense(output_neurons, name='output')(hidden_tensor_2)   
+    model_dense = Model(input_tensor, output_tensor)
 
+    opt = Adam()
     # Compilación del modelo
-    model_dense.compile(loss="mse", optimizer="adam", metrics=['accuracy'])
+    model_dense.compile(loss="mse", optimizer=opt, metrics=['mse'])
 
     # Mostramos cómo es
     model_dense.summary()
@@ -90,20 +97,24 @@ if __name__ == '__main__':
     img_cols = x.shape[1]
     img_rows = x.shape[2]
     input_shape = (img_cols,img_rows,input_channels)
-    hidden_layer_neurons = 512
+    hidden_layer_neurons = 32
     output_neurons = 2 * N
 
     # Construcción de la arquitectura
     input_tensor = Input(shape=input_shape ,name='input')
-    hidden_conv = Conv2D(16, kernel_size=(3, 3),activation='relu')(input_tensor)
+    hidden_conv = Conv2D(64, kernel_size=(3, 3),activation='relu')(input_tensor)
     hidden_maxpool = MaxPooling2D((2,2))(hidden_conv)
-    hidden_flatten = Flatten()(hidden_conv)
+    hidden_conv1 = Conv2D(32, kernel_size=(3, 3),activation='relu')(hidden_maxpool)
+    hidden_maxpool1 = MaxPooling2D((2,2))(hidden_conv1)
+    hidden_conv2 = Conv2D(16, kernel_size=(3, 3),activation='relu')(hidden_maxpool1)
+    hidden_maxpool2 = MaxPooling2D((2,2))(hidden_conv2)
+    hidden_flatten = Flatten()(hidden_maxpool2)
     hidden_tensor = Dense(hidden_layer_neurons, activation='relu',name='hidden')(hidden_flatten) 
-    output_tensor = Dense(output_neurons,activation='relu',name='output')(hidden_tensor)               
+    output_tensor = Dense(output_neurons, name='output')(hidden_tensor)               
     model_conv = Model(input_tensor,output_tensor) 
 
     # Compilación del modelo
-    model_conv.compile(loss="mse", optimizer="adam", metrics=['accuracy'])
+    model_conv.compile(loss="mse", optimizer="adam", metrics=['mse'])
 
     # Mostramos cómo es
     model_conv.summary()

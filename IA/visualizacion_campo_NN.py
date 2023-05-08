@@ -57,7 +57,7 @@ class visualizador_resultados():
         self.calcula_errores_traza()
 
     def calcula_trazas_pred(self):
-        for i in range(self.N):
+        for i in range(self.NUMERO_PULSOS):
             pulso = self.campos_concat_pred[i][:self.N] + 1j * self.campos_concat_pred[i][self.N:]
             self.T_pred[i] = traza(pulso, self.t, self.Δt, self.N)
 

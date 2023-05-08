@@ -61,7 +61,7 @@ if __name__ == '__main__':
     with open(f"./IA/DataBase/{numero_total_pulsos}_pulsos_aleatorios_N{N}.csv", "w", newline='') as file_out:
         writer = csv.writer(file_out)
 
-        header = ['TBP'] + ['E_r['+str(j)+']' for j in range(N)] + ['E_i[]'+str(j)+']' for j in range(N)] + ['T['+str(m)+ '][' + str(n) + ']' for m in range(2 * N - 1) for n in range(N)]
+        header = ['TBP'] + ['E_r['+str(j)+']' for j in range(N)] + ['E_i['+str(j)+']' for j in range(N)] + ['T['+str(m)+ '][' + str(n) + ']' for m in range(2 * N - 1) for n in range(N)]
         writer.writerow(header)
 
         for TBP in np.arange(TBP_inicial, TBP_final, step=paso_TBP):

@@ -191,5 +191,5 @@ dkms.conf
 # vs code
 .vscode
 test.py
-*.csv
+*N128.csv
 *.h5

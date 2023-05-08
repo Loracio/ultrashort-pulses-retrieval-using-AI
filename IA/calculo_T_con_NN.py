@@ -18,7 +18,7 @@ from lee_database import formateador
 if __name__ == '__main__':
     # Parámetros lectura
     N = 128
-    NUMERO_PULSOS = 2000
+    NUMERO_PULSOS = 1000
 
     # Ruta al fichero de la base de datos
     direccion_archivo = f"./IA/DataBase/{NUMERO_PULSOS}_pulsos_aleatorios_N{N}.csv"
@@ -33,9 +33,13 @@ if __name__ == '__main__':
     print(f"Tamaño del conjunto de entrenamiento: {tamaño_entrenamiento}")
     print(f"Tamaño del conjunto de validación: {tamaño_validacion}")
 
+    # Normalizamos las trazas:
+    for i in range(NUMERO_PULSOS):
+        x[i] /= np.max(x)
+        y[i] /= np.max(y)
 
     # Parámetros de la red
-    EPOCHS = 25
+    EPOCHS = 100
     BATCH_SIZE = 32
 
     """
@@ -44,27 +48,27 @@ if __name__ == '__main__':
     e imaginarias del pulso.
     La capa de salida nos dará el vector Tmn en versión 1D.
     """
-    # input_shape = (2*N,)
+    input_shape = (2*N,)
     hidden_layer_neurons = 128
     output_neurons = (2*N - 1) * N
 
-    # # Construcción de la arquitectura
-    # input_tensor = Input(shape=input_shape ,name='input')
-    # hidden_tensor = Dense(hidden_layer_neurons, activation='relu',name='hidden')(input_tensor)  
-    # output_tensor = Dense(output_neurons,activation='relu',name='output')(hidden_tensor)               
-    # model_dense = Model(input_tensor,output_tensor) 
+    # Construcción de la arquitectura
+    input_tensor = Input(shape=input_shape ,name='input')
+    hidden_tensor = Dense(hidden_layer_neurons, activation='relu',name='hidden')(input_tensor) 
+    output_tensor = Dense(output_neurons, name='output')(hidden_tensor)               
+    model_dense = Model(input_tensor,output_tensor) 
 
-    # # Compilación del modelo
-    # model_dense.compile(loss="mse", optimizer="adam")
+    # Compilación del modelo
+    model_dense.compile(loss="mse", optimizer="adam", metrics=['mse'])
 
-    # # Mostramos cómo es
-    # model_dense.summary()
+    # Mostramos cómo es
+    model_dense.summary()
 
-    # # Entrenamiento
-    # history = model_dense.fit(x[:tamaño_entrenamiento], y[:tamaño_entrenamiento], epochs=EPOCHS, batch_size=BATCH_SIZE, validation_data=(x[tamaño_validacion:], y[tamaño_validacion:]))
+    # Entrenamiento
+    history = model_dense.fit(x[:tamaño_entrenamiento], y[:tamaño_entrenamiento], epochs=EPOCHS, batch_size=BATCH_SIZE, validation_data=(x[tamaño_validacion:], y[tamaño_validacion:]))
 
-    # # Guardamos el modelo entrenado para ver los resultados
-    # model_dense.save("./IA/NN_models/pulse_trace_model_simple_dense.h5")
+    # Guardamos el modelo entrenado para ver los resultados
+    model_dense.save("./IA/NN_models/pulse_trace_model_simple_dense.h5")
 
 
     """
@@ -74,7 +78,7 @@ if __name__ == '__main__':
     real e imaginaria del pulso.
     """
 
-    input_channels=1
+    input_channels = 1
     def x_from_dense_to_conv2d(x,NUM_PULSOS, N,input_channels):
         return x.reshape((NUM_PULSOS, N, 2, 1))
 
@@ -92,11 +96,11 @@ if __name__ == '__main__':
     hidden_maxpool_1 = MaxPooling2D((1,1))(hidden_conv_1)
     hidden_flatten = Flatten()(hidden_conv_1)
     hidden_tensor = Dense(hidden_layer_neurons, activation='relu',name='hidden')(hidden_flatten) 
-    output_tensor = Dense(output_neurons,activation='relu',name='output')(hidden_tensor)               
+    output_tensor = Dense(output_neurons, name='output')(hidden_tensor)               
     model_conv = Model(input_tensor,output_tensor) 
 
     # Compilación del modelo
-    model_conv.compile(loss="mse", optimizer="adam", metrics=['accuracy'])
+    model_conv.compile(loss="mse", optimizer="adam", metrics=['mse'])
 
     # Mostramos cómo es
     model_conv.summary()

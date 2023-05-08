@@ -9,6 +9,7 @@ if not __CORE_MODULE_IMPORTED__:
     from .graficos import *
     from .pulso_aleatorio import *
     from .recuperacion import *
+    from .recuperacion_experimental import *
     from .unidades import *
     from .utiles import *
 __CORE_MODULE_IMPORTED__ = True

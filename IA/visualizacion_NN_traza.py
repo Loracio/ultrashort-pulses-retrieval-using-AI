@@ -278,7 +278,7 @@ class visualizador_resultados():
 if __name__ == '__main__':
 
     N = 128
-    NUMERO_PULSOS = 200
+    NUMERO_PULSOS = 1000
 
     duracion_temporal = 1 # Tiempo total de medida de los pulsos de la base de datos (ps)
     t, Δt = np.linspace(-duracion_temporal/2, duracion_temporal/2, num=N, retstep=True)
