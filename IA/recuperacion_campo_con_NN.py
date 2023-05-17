@@ -8,7 +8,7 @@ salida la parte real e imaginaria del campo eléctrico.
 Este script simplemente contiene la arquitectura de la red y su entrenamiento,
 para ver los resultados usar el archivo 'visualizacion_campo_NN.py'
 """
-
+import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Dense, Input, Conv2D, MaxPooling2D, Flatten, Dropout
 from tensorflow.keras.optimizers import Adam, SGD
@@ -24,19 +24,21 @@ if __name__ == '__main__':
     N = 128
     NUMERO_PULSOS = 1000
 
+    duracion_temporal = 1 # Tiempo total de medida de los pulsos de la base de datos (ps)
+    t, Δt = np.linspace(-duracion_temporal/2, duracion_temporal/2, num=N, retstep=True)
+
     # Ruta al fichero de la base de datos
     direccion_archivo = f"./IA/DataBase/{NUMERO_PULSOS}_pulsos_aleatorios_N{N}.csv"
  
     # Cargamos los datos como np.ararys. Formateador devuelve TBP, Traza, Campo
-    TBP, y, x = formateador(direccion_archivo, N, NUMERO_PULSOS, shuffle=True, buffer_size=500)
+    TBP, y, x = formateador(direccion_archivo, N, NUMERO_PULSOS, shuffle=True, buffer_size=1000)
 
-    # Normalizamos las trazas:
-    for i in range(NUMERO_PULSOS):
-        x[i] /= np.max(x)
-        y[i] /= np.max(y)
+    # Normalizamos input / output:
+    x /= np.max(x)
+    y /= np.max(y)
  
     # Separamos entre conjunto de entrenamiento y validación
-    tamaño_entrenamiento = int(0.8 * NUMERO_PULSOS)
+    tamaño_entrenamiento = int(0.7 * NUMERO_PULSOS)
     tamaño_validacion = NUMERO_PULSOS - tamaño_entrenamiento
 
     print(f"Tamaño del conjunto de entrenamiento: {tamaño_entrenamiento}")
@@ -44,7 +46,7 @@ if __name__ == '__main__':
 
 
     # Parámetros de la red
-    EPOCHS = 100
+    EPOCHS = 25
     BATCH_SIZE = 32
 
     """
@@ -53,15 +55,18 @@ if __name__ == '__main__':
     la parte real e imaginaria del campo, una detrás de la otra.
     """
     input_shape = ((2*N -1)*N,)
-    hidden_layer_neurons = N
+    hidden_layer_neurons = 2 * N
     output_neurons = 2 * N
 
     # Construcción de la arquitectura
     input_tensor = Input(shape=input_shape ,name='input')
     hidden_tensor = Dense(hidden_layer_neurons, activation='relu', name='hidden')(input_tensor)
-    hidden_tensor_1 = Dense(int(hidden_layer_neurons/2), activation='relu', name='hidden1')(hidden_tensor)
+    hidden_tensor_1 = Dense(hidden_layer_neurons, activation='relu', name='hidden1')(hidden_tensor)
     hidden_tensor_2 = Dense(hidden_layer_neurons, activation='relu', name='hidden2')(hidden_tensor_1)
-    output_tensor = Dense(output_neurons, name='output')(hidden_tensor_2)   
+    hidden_tensor_3 = Dense(hidden_layer_neurons, activation='relu', name='hidden3')(hidden_tensor_2)
+    hidden_tensor_4 = Dense(hidden_layer_neurons, activation='relu', name='hidden4')(hidden_tensor_3)
+    hidden_tensor_5 = Dense(hidden_layer_neurons, activation='relu', name='hidden5')(hidden_tensor_4)
+    output_tensor = Dense(output_neurons, name='output')(hidden_tensor_4)   
     model_dense = Model(input_tensor, output_tensor)
 
     opt = Adam()
@@ -71,12 +76,15 @@ if __name__ == '__main__':
     # Mostramos cómo es
     model_dense.summary()
 
+    # # ! Cargamos red entrenada
+    # direccion_modelo = "./IA/NN_models/campo_model_simple_dense.h5"
+    # model_dense = tf.keras.models.load_model(direccion_modelo)
+
     # Entrenamiento
     history = model_dense.fit(x[:tamaño_entrenamiento], y[:tamaño_entrenamiento], epochs=EPOCHS, batch_size=BATCH_SIZE, validation_data=(x[tamaño_validacion:], y[tamaño_validacion:]))
 
     # Guardamos el modelo entrenado para ver los resultados
     model_dense.save("./IA/NN_models/campo_model_simple_dense.h5")
-
 
     """
     Vamos a hacer un segundo modelo, en este caso utilizando capas

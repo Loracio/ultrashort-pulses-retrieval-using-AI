@@ -400,7 +400,7 @@ if __name__ == '__main__':
     print(f"Desviación: {np.std(ver_densa.errores_traza)}")
 
     plt.show()
-
+    
     """
     Comparamos los resultados con una capa que contiene capas
     convolucionales

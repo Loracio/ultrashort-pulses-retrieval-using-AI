@@ -132,6 +132,7 @@ class retrieverExpBase():
         
 
         self.I_campo_solucion = np.abs(self.campo)**2
+
         self.I_espectral_solucion = np.abs(DFT(self.campo, self.t, self.Δt, self.ω, self.Δω, r_n=self.r_n, s_j=self.s_j))**2
 
         self.fase_campo_solucion = np.unwrap(np.angle(self.campo)) 
@@ -140,8 +141,7 @@ class retrieverExpBase():
         self.fase_espectro_solucion = np.unwrap(np.angle(DFT(self.campo, self.t, self.Δt, self.ω, self.Δω, r_n=self.r_n, s_j=self.s_j))) 
         self.fase_espectro_solucion -=  media(self.fase_espectro_solucion, self.I_espectral_solucion)
 
-        self.ax[0][0].plot(np.nan, '-.', label='Fase', color='red')
-        self.ax[0][0].plot(self.t,self. I_campo_solucion, color='orange', label='Intensidad campo recuperado')
+        self.ax[0][0].plot(self.t, self.I_campo_solucion, color='orange', label='Intensidad campo recuperado')
         twin_ax00.plot(self.t, self.fase_campo_solucion, '-.', color='violet')
         self.ax[0][0].plot(np.nan, '-.', label='Fase campo recuperado', color='violet')
         self.ax[0][0].set_xlabel("Tiempo (fs)")
@@ -349,6 +349,8 @@ class GPA(retrieverExpBase):
         """
         ΔSmj = self.Smk_siguiente - self.Smk
 
+
+        #! Implementación del cálculo según PyPret
         # indices = np.array(np.rint(self.t / self.Δt), dtype=np.int32)
         # self.gradZ = np.zeros((self.M, self.N), dtype=np.complex128)
 
@@ -360,27 +362,27 @@ class GPA(retrieverExpBase):
         
         # self.gradZ = -2 * np.sum(self.gradZ + ΔSmj * Amk.conj(), axis=0)
 
+        #! Mi implementación. Asunción de continuación periódica del campo para el cálculo
         for j in range(self.N):
             self.gradZ[j] = 0
 
             for τ, m in enumerate(self.bin_delays):
-                # Segundo término del gradiente ΔSₘⱼ·E*₍ⱼ₊ₘ₎
-                if (j + m) >= self.N and (j + τ) >= self.N:
-                    self.gradZ[j] += ΔSmj[(τ + j) - self.N][j] * self.campo[(j + m) - self.N].conj()
 
-                elif (j + m) < 0 and (j + τ) < 0:
-                    self.gradZ[j] += ΔSmj[self.N + (τ + j)][j] * self.campo[self.N + (j + m)].conj()
-
-                elif 0 <= (j + m) < self.N and 0 <= (j + τ) < self.N:
-                    self.gradZ[j] += ΔSmj[τ + j][j] * self.campo[j + m].conj()
-
-                # Primer término del gradiente ΔS₍ⱼ₋ₘ₎ⱼ·E*₍ⱼ₋ₘ₎
-                if 0 > (j - m) and 0 > (j - τ):
-                    self.gradZ[j] += ΔSmj[τ][j] * self.campo[self.N + (j - m)].conj()
-                elif (j - m) >= self.N and (j - τ) >= self.N:
-                    self.gradZ[j] += ΔSmj[τ][j] * self.campo[(j - m) - self.N].conj()
-                elif 0 <= (j - m) < self.N and 0 <= (j - τ) < self.N:
+                # Primer término del gradiente ΔSₘⱼ·E*₍ⱼ₋ₘ₎
+                if (j - m) < 0:
                     self.gradZ[j] += ΔSmj[τ][j] * self.campo[j - m].conj()
+                elif (j - m) >= self.N:
+                    self.gradZ[j] += ΔSmj[τ][j] * self.campo[(j - m) - self.N].conj()
+                else:
+                    self.gradZ[j] += ΔSmj[τ][j] * self.campo[j - m].conj()
+
+                # Segundo término del gradiente ΔSₘ₍ⱼ₊ₘ₎·E*₍ⱼ₊ₘ₎
+                if (j + m) < 0:
+                    self.gradZ[j] += ΔSmj[τ][j + m] * self.campo[j + m].conj()
+                elif (j + m) >= self.N:
+                    self.gradZ[j] += ΔSmj[τ][(j + m) - self.N] * self.campo[(j + m) - self.N].conj()
+                else:
+                    self.gradZ[j] += ΔSmj[τ][j + m] * self.campo[j + m].conj()
 
             self.gradZ[j] *= -2
     
@@ -427,312 +429,6 @@ class GPA(retrieverExpBase):
         """
         for j in range(self.N):
             self.campo[j] -= self.γ * self.gradZ[j]
-
-class COPRA(retrieverExpBase):
-    """
-    Clase para utilizar el método común de reconstrucción de pulsos (COPRA) para reconstuir 
-    un pulso a partir de su traza, partiendo de un pulso candidato. 
-    
-    El método COPRA consiste en dos pasos principales:
-
-        - Paso 1 : iteración local. Recibe este nombre porque se realiza para un valor de m constante cada vez.
-                   El primer paso de la iteración local consiste en calcular el nuevo valor del operador señal 
-                   del pulso candidato, S'ₘₖ, realizando una proyección sobre el conjunto de pulsos que satisface
-                   que Sₘₖ = ℱ⁻¹{√Tₘₙᵐᵉᵃˢ}, por lo que se realiza la siguiente proyección: S'ₘₖ = μ⁻½ ℱ⁻¹{Sₘₙ / |Sₘₙ|  · √Tₘₙᵐᵉᵃˢ},
-                   donde se utiliza el mismo valor de μ para todos los m's.
-
-                   Después, se actualiza el valor del espectro del pulso, Ẽ, mediante un descenso de gradiente. Para ello
-                   se define Zₘ = ∑ₖ |S'ₘₖ - Sₘₖ|², de manera que el descenso de gradiente en la j-ésima iteración local 
-                   será Ẽₙ' = Ẽₙ - γₘʲ ∇ₙZₘ; donde γₘʲ es un control del paso del descenso. Para trazas con poco ruidio
-                   una buena elección es tomar γₘʲ = Zₘ / ∑ₙ|∇ₙZₘ|². En presencia de ruido, una mejor elección es cambiar
-                   el denominador por gₘʲ = max(gₘ₋₁ʲ, ∑ₙ|∇ₙZₘ|²); con g₋₁ʲ = 0. Así γₘʲ = Zₘ / max(gₘ₋₁ʲ, g_{M-1}ʲ⁻¹)
-
-                   Tras la actualización de Ẽ, se procede a repetir el mismo procedimiento con el siguiente valor de m.
-                   Al terminar un paso de iteración local completo (todas las m's), se actualizan los valores de R y µ.
-                   Si R no mejora en 10 iteraciones, se pasa al paso de 'iteración global'.
-
-        - Paso 2 : iteración global. En este paso se procesan a la vez todos los τₘ. Se empieza con la mejor solución Ẽ
-                   obtenida en la iteración local. El primer paso de la iteración global es actualizar los valores de 
-                   Sₘₖ, Sₘₙ y Tₘₙ para el pulso candidato, además de µ y R.
-
-                   Seguidamente, buscamos un nuevo valor del operador señal del pulso candidato S'ₘₖ, realizando una
-                   minimización de r respecto a Sₘₖ, mediante un paso de descenso de gradiente, S'ₘₖ = Sₘₖ - ηᵣ ∇ₘₖr.
-                   Donde ηᵣ = α·(r / ∑ₗⱼ |∇ₗⱼr|²), siendo α un control del paso en cada iteración, que tomamos constante
-                   e igual a 0.25 (se ha probado que da buena convergencia). El gradiente ∇ₘₖr vendrá dado por la expresión:
-                   ∇ₘₖr = -4µ · 2πΔω / Δt ℱ⁻¹[(Tₘₙᵐᵉᵃˢ - μTₘₙ)Sₘₙ]
-
-                   Paso seguido, buscamos encontrar el espectro correspondiente a partir del nuevo estimado S'ₘₖ en un paso 
-                   similar al de la iteración local, pero actualizando sobre todas las m's a la vez. Realizamos el siguiente
-                   descenso de gradiente: Ẽₙ' = Ẽₙ - η_z ∇ₙZ, con η_z = α·(Z / ∑ₖ |∇ₖZ|²).
-
-                   Tras esto, podemos calcular el error de la traza R, y si se satisface la condición de convergencia o se llega
-                    al máximo de iteraciones se para el algoritmo. En caso contrario, se vuelve al paso de iteración local.
-
-    Args:
-            t (np.ndarray): array de tiempos equiespaciados Δt
-            pulso (np.ndarray[np.complex128]): array con el campo eléctrico del pulso a recuperar
-            espectro (np.ndarray[np.complex128], opcional): array con el espectro del pulso a recuperar
-    """
-
-    def __init__(self, t, Δt, pulso, *, espectro=None):
-        """
-        Llama a la inicialización de los parámetros necesarios para realizar la
-        recuperación del pulso: el valor de la traza experimental del pulso,
-        el array de frecuencias para realizar saltos entre dominio temporal y frecuencial,
-        los factores de fase de las transformadas de Fourier.
-        """
-        super().__init__(t, Δt, pulso, espectro=espectro)
-
-    def _inicializa_recuperacion(self, pulso_inicial):
-        """
-        Inicializa los parámetros necesarios para utilizar el algoritmo de reconstrucción.
-        """
-
-        self.campo = np.zeros(self.N, dtype=pulso_inicial.dtype)
-        self.campo = pulso_inicial.copy()
-
-        self.espectro = np.zeros(self.N, dtype=pulso_inicial.dtype)
-        self.espectro = DFT(self.campo, self.t, self.Δt, self.ω, self.Δω, r_n=self.r_n, s_j=self.s_j)
-
-        self.Smk = np.zeros((self.M, self.N), dtype=self.campo.dtype)
-        self.Smk_siguiente = np.zeros((self.M, self.N), dtype=self.campo.dtype) # Para realizar la primera proyección
-        self.calcula_Smk()
-
-        self.Smn = np.zeros((self.M, self.N), dtype=self.campo.dtype)
-        self.Smn_siguiente = np.zeros((self.M, self.N), dtype=self.campo.dtype) # Para realizar la primera proyección
-        self.calcula_Smn()
-
-        self.Tmn = np.zeros((self.M, self.N), dtype=np.float64)
-        self.calcula_Tmn()
-
-        self.μ = None
-        self.calcula_μ()
-
-        self.r = None
-        self.calcula_residuos()
-
-        self.R = None
-        self.calcula_R()
-
-        self.Z = None
-        self.gradZ = np.zeros((self.M, self.N), dtype=self.campo.dtype)
-        self.γ_m = None
-
-        self.solucion_minimo_error = [np.zeros(self.N, dtype=pulso_inicial.dtype), self.R]
-
-
-    def recuperacion(self, pulso_inicial, eps, *, max_iter=None):
-        """
-        Ejecuta el algoritmo de reconstrucción.
-        La idea es pasarle un pulso candidato inicial sobre el que inicie la computación del algoritmo.
-        Se pasa como argumento la precisión deseada en el error de la traza, y si no, un máximo de iteraciones.
-
-        El método COPRA consiste en dos pasos principales:
-
-        - Paso 1 : iteración local. Recibe este nombre porque se realiza para un valor de m constante cada vez.
-                   El primer paso de la iteración local consiste en calcular el nuevo valor del operador señal 
-                   del pulso candidato, S'ₘₖ, realizando una proyección sobre el conjunto de pulsos que satisface
-                   que Sₘₖ = ℱ⁻¹{√Tₘₙᵐᵉᵃˢ}, por lo que se realiza la siguiente proyección: S'ₘₖ = μ⁻½ ℱ⁻¹{Sₘₙ / |Sₘₙ|  · √Tₘₙᵐᵉᵃˢ},
-                   donde se utiliza el mismo valor de μ para todos los m's.
-
-                   Después, se actualiza el valor del espectro del pulso, Ẽ, mediante un descenso de gradiente. Para ello
-                   se define Zₘ = ∑ₖ |S'ₘₖ - Sₘₖ|², de manera que el descenso de gradiente en la j-ésima iteración local 
-                   será Ẽₙ' = Ẽₙ - γₘʲ ∇ₙZₘ; donde γₘʲ es un control del paso del descenso. Para trazas con poco ruidio
-                   una buena elección es tomar γₘʲ = Zₘ / ∑ₙ|∇ₙZₘ|². En presencia de ruido, una mejor elección es cambiar
-                   el denominador por gₘʲ = max(gₘ₋₁ʲ, ∑ₙ|∇ₙZₘ|²); con g₋₁ʲ = 0. Así γₘʲ = Zₘ / max(gₘ₋₁ʲ, g_{M-1}ʲ⁻¹)
-
-                   Tras la actualización de Ẽ, se procede a repetir el mismo procedimiento con el siguiente valor de m.
-                   Al terminar un paso de iteración local completo (todas las m's), se actualizan los valores de R y µ.
-                   Si R no mejora en 5 iteraciones, se pasa al paso de 'iteración global'.
-
-        - Paso 2 : iteración global. En este paso se procesan a la vez todos los τₘ. Se empieza con la mejor solución Ẽ
-                   obtenida en la iteración local. El primer paso de la iteración global es actualizar los valores de 
-                   Sₘₖ, Sₘₙ y Tₘₙ para el pulso candidato, además de µ y R.
-
-                   Seguidamente, buscamos un nuevo valor del operador señal del pulso candidato S'ₘₖ, realizando una
-                   minimización de r respecto a Sₘₖ, mediante un paso de descenso de gradiente, S'ₘₖ = Sₘₖ - ηᵣ ∇ₘₖr.
-                   Donde ηᵣ = α·(r / ∑ₗⱼ |∇ₗⱼr|²), siendo α un control del paso en cada iteración, que tomamos constante
-                   e igual a 0.25 (se ha probado que da buena convergencia). El gradiente ∇ₘₖr vendrá dado por la expresión:
-                   ∇ₘₖr = -4µ · 2πΔω / Δt ℱ⁻¹[(Tₘₙᵐᵉᵃˢ - μTₘₙ)Sₘₙ]
-
-                   Paso seguido, buscamos encontrar el espectro correspondiente a partir del nuevo estimado S'ₘₖ en un paso 
-                   similar al de la iteración local, pero actualizando sobre todas las m's a la vez. Realizamos el siguiente
-                   descenso de gradiente: Ẽₙ' = Ẽₙ - η_z ∇ₙZ, con η_z = α·(Z / ∑ₖ |∇ₖZ|²).
-
-                   Tras esto, podemos calcular el error de la traza R, y si se satisface la condición de convergencia o se llega
-                    al máximo de iteraciones se para el algoritmo. En caso contrario, se vuelve al paso de iteración local.
-
-        Args:
-            pulso_inicial (np.ndarray[np.complex128]): campo eléctrico del candidato inicial para el algoritmo de recuperación
-            eps (float): precisión deseada en el error de la traza del pulso reconstruido
-            max_iter (int, opcional): máximo de iteraciones del algoritmo. Por defecto no hay máximo.
-        
-        Devuelve:
-            campo (np.ndarray[np.complex128]): campo eléctrico de la solución obtenida
-            espectro (np.ndarray[np.complex128]): espectro de la solución obtenida
-        """
-
-        self._inicializa_recuperacion(pulso_inicial)
-
-        if max_iter is None: max_iter = float('inf')
-        niter = 0
-
-        while self.R > eps and niter < max_iter:
-            
-            self.calcula_Smk_siguiente()
-            
-            self.calcula_Z()
-            # self.calcula_gradZ()
-            self.calcula_gradZ_ciclico()
-            self.calcula_γ()
-            
-            self.calcula_campo_siguiente()
-
-            self.calcula_Smk()
-            self.calcula_Smn()
-            self.calcula_Tmn()
-            self.calcula_μ()
-            self.calcula_residuos()
-            self.calcula_R()
-            
-            if self.R < self.solucion_minimo_error[1]:
-                self.solucion_minimo_error[0] = self.campo.copy()
-                self.solucion_minimo_error[1] = self.R
-                
-            print(f'n={niter+1}, R={self.R}')
-            niter += 1
-
-        print("Error final en la traza: ", self.solucion_minimo_error[1])
-        self.campo = self.solucion_minimo_error[0].copy()
-
-        return self.campo, DFT(self.campo, self.t, self.Δt, self.ω, self.Δω, r_n=self.r_n, s_j=self.s_j)
-
-    def iteracion_local(self):
-        
-        for m in np.random.permutation(np.arange(self.M)):
-            self.calcula_Smk_siguiente_iteracion_local(m)
-            self.calcula_Z_m(m)
-            self.calcula_gradZ_m(m)
-            self.calcula_espectro_siguiente_iteracion_local(m)
-        pass
-
-    def iteracion_global(self):
-        pass
-
-    def calcula_Z(self):
-        """
-        Calcula Z, dado por la siguiente expresión:
-            Z = ∑ₘₖ |S'ₘₖ - Sₘₖ|²
-
-        Donde S'ₘₖ es el operador señal actualizado tras la primera proyección,
-        y Sₘₖ es el operador señal del pulso candidato obtenido tras la anterior
-        iteración.
-        """
-        self.Z = np.sum(np.abs(self.Smk_siguiente - self.Smk)**2)
-
-    def calcula_gradZ(self):
-        """
-        Calcula el gradiente de Z, dado por la siguiente expresión:
-            ∇Z = -2 ∑ₘ(S'ₘⱼ·E*₍ⱼ₊ₘ₎ - Sₘⱼ·E*₍ⱼ₊ₘ₎) + (S'₍ⱼ₋ₘ₎ⱼ·E*₍ⱼ₋ₘ₎ - S₍ⱼ₋ₘ₎ⱼ·E*₍ⱼ₋ₘ₎) =
-               = 2 ∑ₘ ΔSₘⱼ·E*₍ⱼ₊ₘ₎ + ΔS₍ⱼ₋ₘ₎ⱼ·E*₍ⱼ₋ₘ₎
-
-        Donde hacemos cero los términos donde la suma o resta de índices estén fuera de rango.
-        Esta forma de calcular de gradiente parece errónea, pues no proporciona buenas soluciones en
-        comparación a escoger condiciones cíclicas, la cual da un gradiente mayor, y el error en la
-        traza se minimiza antes.
-        """
-        ΔSmj = self.Smk_siguiente - self.Smk
-
-        for j in range(self.N):
-            self.gradZ[j] = 0
-            for τ, m in enumerate(self.bin_delays):
-                if 0 <= (j - m) < self.N:
-                    self.gradZ[j] += ΔSmj[τ][j] * self.campo[j - m].conj()
-
-                if 0 <= (j + m) < self.N:
-                    self.gradZ[j] += ΔSmj[τ + j][j] * self.campo[j + m].conj()
-
-            self.gradZ[j] *= -2
-
-    def calcula_gradZ_ciclico(self):
-        """
-        Calcula el gradiente de Z, dado por la siguiente expresión:
-            ∇Z = -2 ∑ₘ(S'ₘⱼ·E*₍ⱼ₊ₘ₎ - Sₘⱼ·E*₍ⱼ₊ₘ₎) + (S'₍ⱼ₋ₘ₎ⱼ·E*₍ⱼ₋ₘ₎ - S₍ⱼ₋ₘ₎ⱼ·E*₍ⱼ₋ₘ₎) =
-               = 2 ∑ₘ ΔSₘⱼ·E*₍ⱼ₊ₘ₎ + ΔS₍ⱼ₋ₘ₎ⱼ·E*₍ⱼ₋ₘ₎
-
-        Donde utilizamos un shifteo circular de los índices.
-        """
-        ΔSmj = self.Smk_siguiente - self.Smk
-
-        for j in range(self.N):
-            self.gradZ[j] = 0
-
-            for τ, m in enumerate(self.bin_delays):
-                # Segundo término del gradiente ΔSₘⱼ·E*₍ⱼ₊ₘ₎
-                if (j + m) >= self.N:
-                    self.gradZ[j] += ΔSmj[(τ + j) - self.N][j] * self.campo[(j + m) - self.N].conj()
-
-                elif (j + m) < 0:
-                    self.gradZ[j] += ΔSmj[self.N + (τ + j)][j] * self.campo[self.N + (j + m)].conj()
-
-                elif 0 <= (j + m) < self.N:
-                    self.gradZ[j] += ΔSmj[τ + j][j] * self.campo[j + m].conj()
-
-                # Primer término del gradiente ΔS₍ⱼ₋ₘ₎ⱼ·E*₍ⱼ₋ₘ₎
-                if 0 > (j - m):
-                    self.gradZ[j] += ΔSmj[τ][j] * self.campo[self.N + (j - m)].conj()
-                elif (j - m) >= self.N:
-                    self.gradZ[j] += ΔSmj[τ][j] * self.campo[(j - m) - self.N].conj()
-                elif 0 <= (j - m) < self.N:
-                    self.gradZ[j] += ΔSmj[τ][j] * self.campo[j - m].conj()
-
-            self.gradZ[j] *= -2
-            
-    
-    def calcula_γ(self):
-        """
-        Calcula el paso del descenso. En el algoritmo GPA usualmente se realiza
-        una búsqueda lineal para encontrarlo, pero una opción más rápida de encontrarlo
-        e igual de válida es tomar:
-            γ = Z / ∑ⱼ|∇Zⱼ|²
-
-        Debe ser calculada a cada paso de descenso de gradiente que se haga.
-        """
-        self.γ = self.Z / np.sum(np.abs(self.gradZ)**2)
-
-    def calcula_Smk_siguiente_iteracion_local(self, m):
-        """
-        Se calcula el nuevo valor del operador señal del pulso candidato, S'ₘₖ, realizando
-        una proyección sobre el conjunto de pulsos que satisface que Sₘₖ = ℱ⁻¹{√Tₘₙᵐᵉᵃˢ}, por lo que se realiza
-        la siguiente proyección: 
-
-            S'ₘₖ = µ⁻½ ℱ⁻¹{Sₘₙ / |Sₘₙ|  · √Tₘₙᵐᵉᵃˢ}
-        """
-        # Hemos de tener cuidado con valores nulos a la hora de dividir
-        # Si el valor absoluto de un elemento es nulo, tomamos el cociente como la unidad
-        absSmn = np.abs(self.Smn)
-        f = (absSmn > 0.0)
-        """
-        NOTA: en el artículo original de Trebino sobre el método GPA, no se realiza la división
-        entre el factor μ en este caso, como se realiza en COPRA. Si decidimos hacerla, el pulso obtenido
-        presentará una ambigüedad extra en el factor de escala del mismo.
-        """
-        self.Smn_siguiente[~f] = np.sqrt((self.Tmn_medido[~f] + 0.0j))
-        self.Smn_siguiente[f] = self.Smn[f] / absSmn[f] * np.sqrt((self.Tmn_medido[f] + 0.0j))
-
-        for τ in range(self.M):
-            self.Smk_siguiente[τ][:] = IDFT(self.Smn_siguiente[τ][:], self.t, self.Δt, self.ω, self.Δω, s_j_conj=self.s_j_conj, r_n_conj=self.r_n_conj)
-
-
-    def calcula_campo_siguiente(self):
-        """
-        Actualiza el valor del campo eléctrico del pulso candidato realizando
-        un descenso de gradiente:
-            Eⱼ' = Eⱼ - γ·∇Zⱼ
-        """
-        for j in range(self.N):
-            self.campo[j] -= self.γ * self.gradZ[j]
-
 
 
 class PCGPA(retrieverExpBase):
@@ -902,9 +598,9 @@ class PCGPA(retrieverExpBase):
             self.Smk_siguiente[:, n] = np.roll(self.Smk_siguiente[::-1, n], n)
         
         #! Realizar el 'power method' presenta ambigüedades en la amplitud del pulso recuperado
-        self.campo = self.Smk_siguiente.conj() @ self.campo
-        self.campo = self.campo.conj() / np.sqrt(np.sum(np.abs(self.campo)**2))
+        # self.campo = self.campo.conj() / np.sqrt(np.sum(np.abs(self.campo)**2))
+        # self.campo = self.Smk_siguiente.conj() @ self.campo
 
         # Actualización por Descomposición de Valores Singulares (SVD)
-        # U, s, V = np.linalg.svd(self.Smk_siguiente)
-        # self.campo = U[:, 0] * np.sqrt(s[0])
+        U, s, V = np.linalg.svd(self.Smk_siguiente)
+        self.campo = U[:, 0] * np.sqrt(s[0])
