@@ -116,7 +116,7 @@ class retrieverExpBase():
         """
         self.R = np.sqrt(self.r / (self.M * self.N * self.Tmn_medido_max_cuadrado))
 
-    def plot(self):
+    def plot(self, λ0):
         """
         Representa las intensidades temporales y espectrales tanto del pulso original como del pulso solución,
         además de sus correspondientes trazas.
@@ -150,8 +150,8 @@ class retrieverExpBase():
         self.ax[0][0].set_title("Dominio temporal")
         self.ax[0][0].grid()
 
-        self.ax[0][1].plot(2 * np.pi * 300 / self.ω, self.I_espectral_solucion, color='orange', label='Intensidad espectral recuperada')
-        twin_ax01.plot(2 * np.pi * 300 / self.ω, self.fase_espectro_solucion, '-.', color='violet')
+        self.ax[0][1].plot(2 * np.pi * 300 / (2 * np.pi * 300 / λ0 + self.ω), self.I_espectral_solucion, color='orange', label='Intensidad espectral recuperada')
+        twin_ax01.plot(2 * np.pi * 300 / (2 * np.pi * 300 / λ0 + self.ω), self.fase_espectro_solucion, '-.', color='violet')
         self.ax[0][1].plot(np.nan, '-.', label='Fase espectral recuperada', color='violet')
         self.ax[0][1].set_xlabel("λ (nm)")
         self.ax[0][1].set_ylabel("Intensidad (u.a.)")
@@ -171,13 +171,13 @@ class retrieverExpBase():
 
         self.Tmn_recuperado_normalizado = self.Tmn / np.max(self.Tmn)
 
-        self.im0 = self.ax[1][0].pcolormesh(self.ω, self.t, self.Tmn_medido_normalizado, cmap='YlGnBu_r')
+        self.im0 = self.ax[1][0].pcolormesh(2 * np.pi * 300 / λ0 + self.ω, self.t, self.Tmn_medido_normalizado, cmap='YlGnBu_r')
         self.fig.colorbar(self.im0, ax=self.ax[1][0])
         self.ax[1][0].set_xlabel("ω (2π/fs)")
         self.ax[1][0].set_ylabel("τ (fs)")
         self.ax[1][0].set_title("Traza del pulso medido")
 
-        self.im1 = self.ax[1][1].pcolormesh(self.ω, self.t, self.Tmn_recuperado_normalizado, cmap='YlGnBu_r')
+        self.im1 = self.ax[1][1].pcolormesh(2 * np.pi * 300 / λ0 + self.ω, self.t, self.Tmn_recuperado_normalizado, cmap='YlGnBu_r')
         self.fig.colorbar(self.im1, ax=self.ax[1][1])
         self.ax[1][1].set_xlabel("ω (2π/fs)")
         self.ax[1][1].set_ylabel("τ (fs)")

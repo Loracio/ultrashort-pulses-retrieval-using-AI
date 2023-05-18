@@ -14,7 +14,7 @@ from core import *
 
 plt.rcParams.update({'font.size': 14}) # Tamaño de la fuente del plot
 
-def plot_resultado_NN(campo, T_medido):
+def plot_resultado_NN(campo, T_medido, λ0):
     fig, ax = plt.subplots(2,2)
 
     twin_ax00 = ax[0][0].twinx()
@@ -40,8 +40,8 @@ def plot_resultado_NN(campo, T_medido):
     ax[0][0].set_title("Dominio temporal")
     ax[0][0].grid()
 
-    ax[0][1].plot(2 * np.pi * 300 / ω, I_espectral_solucion, color='orange', label='Intensidad espectral recuperada')
-    twin_ax01.plot(2 * np.pi * 300 / ω, fase_espectro_solucion, '-.', color='violet')
+    ax[0][1].plot(2 * np.pi * 300 / (2 * np.pi * 300 / λ0 + ω), I_espectral_solucion, color='orange', label='Intensidad espectral recuperada')
+    twin_ax01.plot(2 * np.pi * 300 / (2 * np.pi * 300 / λ0 + ω), fase_espectro_solucion, '-.', color='violet')
     ax[0][1].plot(np.nan, '-.', label='Fase espectral recuperada', color='violet')
     ax[0][1].set_xlabel("λ (nm)")
     ax[0][1].set_ylabel("Intensidad (u.a.)")
@@ -62,13 +62,13 @@ def plot_resultado_NN(campo, T_medido):
     R = np.sqrt(r / (N * N * T_medido.max()**2))
 
 
-    im0 = ax[1][0].pcolormesh(ω, τ, T_medido_normalizado, cmap='YlGnBu_r')
+    im0 = ax[1][0].pcolormesh(2 * np.pi * 300 / λ0 + ω, τ, T_medido_normalizado, cmap='YlGnBu_r')
     fig.colorbar(im0, ax=ax[1][0])
     ax[1][0].set_xlabel("ω (2π/fs)")
     ax[1][0].set_ylabel("τ (fs)")
     ax[1][0].set_title("Traza del pulso medido")
 
-    im1 = ax[1][1].pcolormesh(ω, τ, T_recuperado_normalizado[int((N-1)/2):int((N-1)/2) + N], cmap='YlGnBu_r')
+    im1 = ax[1][1].pcolormesh(2 * np.pi * 300 / λ0 + ω, τ, T_recuperado_normalizado[int((N-1)/2):int((N-1)/2) + N], cmap='YlGnBu_r')
     fig.colorbar(im1, ax=ax[1][1])
     ax[1][1].set_xlabel("ω (2π/fs)")
     ax[1][1].set_ylabel("τ (fs)")
@@ -100,8 +100,6 @@ if __name__ == '__main__':
 
     λ0 = 790
     ω0 = 2 * np.pi * 300 / λ0
-
-    ω += ω0
 
     Δω = ω[1] - ω[0]
     Δτ = τ[1] - τ[0]
@@ -152,8 +150,8 @@ if __name__ == '__main__':
     pulso_900mA_NN = campos_concat_pred[0][:N] + 1j * campos_concat_pred[0][N:]
     pulso_2100mA_NN = campos_concat_pred[1][:N] + 1j * campos_concat_pred[1][N:]
 
-    plot_resultado_NN(pulso_900mA_NN, T_900mA)
-    plot_resultado_NN(pulso_2100mA_NN, T_2100mA)
+    plot_resultado_NN(pulso_900mA_NN, T_900mA, λ0)
+    plot_resultado_NN(pulso_2100mA_NN, T_2100mA, λ0)
 
     plt.show()
 
@@ -177,12 +175,12 @@ if __name__ == '__main__':
 
 
     ret_GPA_900mA = GPA(τ, Δτ, ω, Δω, T_900mA)
-    campo_GPA_900mA, espectro_GPA_900mA = ret_GPA_900mA.recuperacion(pulso_candidato, 1e-10, max_iter=200)
-    ret_GPA_900mA.plot()
+    campo_GPA_900mA, espectro_GPA_900mA = ret_GPA_900mA.recuperacion(pulso_candidato, 1e-10, max_iter=500)
+    ret_GPA_900mA.plot(λ0)
 
     ret_PCGPA_900mA = PCGPA(τ, Δτ, ω, Δω, T_900mA)
     campo_PCGPA_900mA, espectro_PCGPA_900mA = ret_PCGPA_900mA.recuperacion(pulso_candidato, 1e-10, max_iter=200)
-    ret_PCGPA_900mA.plot()
+    ret_PCGPA_900mA.plot(λ0)
 
     print(f"Anchura temporal pulso 900mA predicha por el método GPA : {Δτ * compute_fwhm(np.abs(campo_GPA_900mA)**2):.2f} fs")
     print(f"Anchura temporal pulso 900mA predicha por el método PCGPA : {Δτ * compute_fwhm(np.abs(campo_PCGPA_900mA)**2):.2f} fs")
@@ -193,11 +191,11 @@ if __name__ == '__main__':
 
     ret_GPA_2100mA = GPA(τ, Δτ, ω, Δω, T_2100mA)
     campo_GPA_2100mA, espectro_GPA_2100mA = ret_GPA_2100mA.recuperacion(pulso_candidato, 1e-10, max_iter=200)
-    ret_GPA_2100mA.plot()
+    ret_GPA_2100mA.plot(λ0)
 
     ret_PCGPA_2100mA = PCGPA(τ, Δτ, ω, Δω, T_2100mA)
     campo_PCGPA_2100mA, espectro_PCGPA_2100mA = ret_PCGPA_2100mA.recuperacion(pulso_candidato, 1e-10, max_iter=200)
-    ret_PCGPA_2100mA.plot()
+    ret_PCGPA_2100mA.plot(λ0)
 
     print(f"Anchura temporal pulso 2100mA predicha por el método GPA : {Δτ * compute_fwhm(np.abs(campo_GPA_2100mA)**2):.2f} fs")
     print(f"Anchura temporal pulso 2100mA predicha por el método PCGPA : {Δτ * compute_fwhm(np.abs(campo_PCGPA_2100mA)**2):.2f} fs")
