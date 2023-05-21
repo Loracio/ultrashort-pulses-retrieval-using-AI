@@ -362,26 +362,18 @@ class GPA(retrieverExpBase):
         
         # self.gradZ = -2 * np.sum(self.gradZ + ΔSmj * Amk.conj(), axis=0)
 
-        #! Mi implementación. Asunción de continuación periódica del campo para el cálculo
+        #! Mi implementación
         for j in range(self.N):
             self.gradZ[j] = 0
 
             for τ, m in enumerate(self.bin_delays):
 
                 # Primer término del gradiente ΔSₘⱼ·E*₍ⱼ₋ₘ₎
-                if (j - m) < 0:
-                    self.gradZ[j] += ΔSmj[τ][j] * self.campo[j - m].conj()
-                elif (j - m) >= self.N:
-                    self.gradZ[j] += ΔSmj[τ][j] * self.campo[(j - m) - self.N].conj()
-                else:
+                if 0 <= (j - m) and (j - m) < self.N:
                     self.gradZ[j] += ΔSmj[τ][j] * self.campo[j - m].conj()
 
                 # Segundo término del gradiente ΔSₘ₍ⱼ₊ₘ₎·E*₍ⱼ₊ₘ₎
-                if (j + m) < 0:
-                    self.gradZ[j] += ΔSmj[τ][j + m] * self.campo[j + m].conj()
-                elif (j + m) >= self.N:
-                    self.gradZ[j] += ΔSmj[τ][(j + m) - self.N] * self.campo[(j + m) - self.N].conj()
-                else:
+                if 0 <= (j + m) and (j + m) < self.N:
                     self.gradZ[j] += ΔSmj[τ][j + m] * self.campo[j + m].conj()
 
             self.gradZ[j] *= -2

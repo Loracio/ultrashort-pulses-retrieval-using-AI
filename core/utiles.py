@@ -92,3 +92,21 @@ def desviacion_estandar(x, y):
     """
     dx = x - media(x, y)
     return np.sqrt(np.sum(dx * dx * y) / np.sum(y))
+
+def FWHM(señal, Δt):
+    """
+    Calcula la anchura a media altura (Full Width at Half Maximum) de una señal.
+
+    Args:
+        señal (np.array): señal sobre la que calcular su FWHM
+        Δt (float): muestreo temporal
+
+    Returns:
+        FHWM (float): anchura a media altura de la señal
+    """
+    half_max = np.max(señal) / 2
+
+    left_idx = np.argmax(señal >= half_max)
+    right_idx = len(señal) - np.argmax(señal[::-1] >= half_max) - 1
+
+    return (right_idx - left_idx) * Δt

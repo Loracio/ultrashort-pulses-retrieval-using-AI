@@ -775,12 +775,16 @@ class COPRA_retriever(retrieverBase):
 
         for j in range(self.N):
             self.gradZ[j] = 0
+
             for τ, m in enumerate(self.bin_delays):
-                if 0 <= (j - m) < self.N:
+
+                # Primer término del gradiente ΔSₘⱼ·E*₍ⱼ₋ₘ₎
+                if 0 <= (j - m) and (j - m) < self.N:
                     self.gradZ[j] += ΔSmj[τ][j] * self.campo[j - m].conj()
 
-                if 0 <= (j + m) < self.N:
-                    self.gradZ[j] += ΔSmj[τ + j][j] * self.campo[j + m].conj()
+                # Segundo término del gradiente ΔSₘ₍ⱼ₊ₘ₎·E*₍ⱼ₊ₘ₎
+                if 0 <= (j + m) and (j + m) < self.N:
+                    self.gradZ[j] += ΔSmj[τ][j + m] * self.campo[j + m].conj()
 
             self.gradZ[j] *= -2
 
@@ -798,26 +802,24 @@ class COPRA_retriever(retrieverBase):
             self.gradZ[j] = 0
 
             for τ, m in enumerate(self.bin_delays):
-                # Segundo término del gradiente ΔSₘⱼ·E*₍ⱼ₊ₘ₎
-                if (j + m) >= self.N:
-                    self.gradZ[j] += ΔSmj[(τ + j) - self.N][j] * self.campo[(j + m) - self.N].conj()
 
-                elif (j + m) < 0:
-                    self.gradZ[j] += ΔSmj[self.N + (τ + j)][j] * self.campo[self.N + (j + m)].conj()
-
-                elif 0 <= (j + m) < self.N:
-                    self.gradZ[j] += ΔSmj[τ + j][j] * self.campo[j + m].conj()
-
-                # Primer término del gradiente ΔS₍ⱼ₋ₘ₎ⱼ·E*₍ⱼ₋ₘ₎
-                if 0 > (j - m):
-                    self.gradZ[j] += ΔSmj[τ][j] * self.campo[self.N + (j - m)].conj()
+                # Primer término del gradiente ΔSₘⱼ·E*₍ⱼ₋ₘ₎
+                if (j - m) < 0:
+                    self.gradZ[j] += ΔSmj[τ][j] * self.campo[j - m].conj()
                 elif (j - m) >= self.N:
                     self.gradZ[j] += ΔSmj[τ][j] * self.campo[(j - m) - self.N].conj()
-                elif 0 <= (j - m) < self.N:
+                else:
                     self.gradZ[j] += ΔSmj[τ][j] * self.campo[j - m].conj()
 
+                # Segundo término del gradiente ΔSₘ₍ⱼ₊ₘ₎·E*₍ⱼ₊ₘ₎
+                if (j + m) < 0:
+                    self.gradZ[j] += ΔSmj[τ][j + m] * self.campo[j + m].conj()
+                elif (j + m) >= self.N:
+                    self.gradZ[j] += ΔSmj[τ][(j + m) - self.N] * self.campo[(j + m) - self.N].conj()
+                else:
+                    self.gradZ[j] += ΔSmj[τ][j + m] * self.campo[j + m].conj()
+
             self.gradZ[j] *= -2
-            
     
     def calcula_γ(self):
         """

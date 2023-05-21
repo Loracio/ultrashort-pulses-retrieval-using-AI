@@ -76,18 +76,6 @@ def plot_resultado_NN(campo, T_medido, λ0):
 
     return fig, ax
 
-def compute_fwhm(signal):
-    max_value = np.max(signal)
-    half_max = max_value / 2
-
-    left_idx = np.argmax(signal >= half_max)
-    right_idx = len(signal) - np.argmax(signal[::-1] >= half_max) - 1
-
-    # Calculate FWHM
-    fwhm = right_idx - left_idx
-
-    return fwhm
-
 if __name__ == '__main__':
     N = 128
 
@@ -153,13 +141,11 @@ if __name__ == '__main__':
     plot_resultado_NN(pulso_900mA_NN, T_900mA, λ0)
     plot_resultado_NN(pulso_2100mA_NN, T_2100mA, λ0)
 
+    print(f"Anchura temporal pulso 900mA predicha por la NN : {FWHM(np.abs(pulso_900mA_NN)**2, Δτ):.2f} fs")
+    print(f"Anchura temporal pulso 2100mA predicha por la NN : {FWHM(np.abs(pulso_2100mA_NN)**2, Δτ):.2f} fs")
+
     plt.show()
-
-    #! FWHM NN
-
-    print(f"Anchura temporal pulso 900mA predicha por la NN : {Δτ * compute_fwhm(np.abs(pulso_900mA_NN)**2):.2f} fs")
-    print(f"Anchura temporal pulso 2100mA predicha por la NN : {Δτ * compute_fwhm(np.abs(pulso_2100mA_NN)**2):.2f} fs")
-
+    
     """
     Algoritmos de recuperación:
     """
@@ -175,15 +161,15 @@ if __name__ == '__main__':
 
 
     ret_GPA_900mA = GPA(τ, Δτ, ω, Δω, T_900mA)
-    campo_GPA_900mA, espectro_GPA_900mA = ret_GPA_900mA.recuperacion(pulso_candidato, 1e-10, max_iter=500)
+    campo_GPA_900mA, espectro_GPA_900mA = ret_GPA_900mA.recuperacion(pulso_candidato, 1e-10, max_iter=200)
     ret_GPA_900mA.plot(λ0)
 
     ret_PCGPA_900mA = PCGPA(τ, Δτ, ω, Δω, T_900mA)
     campo_PCGPA_900mA, espectro_PCGPA_900mA = ret_PCGPA_900mA.recuperacion(pulso_candidato, 1e-10, max_iter=200)
     ret_PCGPA_900mA.plot(λ0)
 
-    print(f"Anchura temporal pulso 900mA predicha por el método GPA : {Δτ * compute_fwhm(np.abs(campo_GPA_900mA)**2):.2f} fs")
-    print(f"Anchura temporal pulso 900mA predicha por el método PCGPA : {Δτ * compute_fwhm(np.abs(campo_PCGPA_900mA)**2):.2f} fs")
+    print(f"Anchura temporal pulso 900mA predicha por el método GPA : {FWHM(np.abs(campo_GPA_900mA)**2, Δτ):.2f} fs")
+    print(f"Anchura temporal pulso 900mA predicha por el método PCGPA : {FWHM(np.abs(campo_PCGPA_900mA)**2, Δτ):.2f} fs")
 
     plt.show()
 
@@ -197,7 +183,7 @@ if __name__ == '__main__':
     campo_PCGPA_2100mA, espectro_PCGPA_2100mA = ret_PCGPA_2100mA.recuperacion(pulso_candidato, 1e-10, max_iter=200)
     ret_PCGPA_2100mA.plot(λ0)
 
-    print(f"Anchura temporal pulso 2100mA predicha por el método GPA : {Δτ * compute_fwhm(np.abs(campo_GPA_2100mA)**2):.2f} fs")
-    print(f"Anchura temporal pulso 2100mA predicha por el método PCGPA : {Δτ * compute_fwhm(np.abs(campo_PCGPA_2100mA)**2):.2f} fs")
+    print(f"Anchura temporal pulso 2100mA predicha por el método GPA : {FWHM(np.abs(campo_GPA_2100mA)**2, Δτ):.2f} fs")
+    print(f"Anchura temporal pulso 2100mA predicha por el método PCGPA : {FWHM(np.abs(campo_PCGPA_2100mA)**2, Δτ):.2f} fs")
 
     plt.show()

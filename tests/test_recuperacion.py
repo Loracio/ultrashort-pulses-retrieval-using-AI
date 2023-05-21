@@ -46,7 +46,7 @@ if __name__ == '__main__':
     fig0, ax0 = plot_traza(t, Δt, pulso_candidato, frecuencias, espectro_candidato)
 
     retriever_PCGPA = PCGPA_retriever(t, Δt, pulso)
-    campo_recuperado_PCGPA, espectro_recuperado_PCGPA = retriever_PCGPA.recuperacion(pulso_candidato, 1e-10, max_iter=1000)
+    campo_recuperado_PCGPA, espectro_recuperado_PCGPA = retriever_PCGPA.recuperacion(pulso_candidato, 1e-10, max_iter=200)
     fig_PCGPA, ax_PCGPA = retriever_PCGPA.plot()
 
     retriever_GPA = GPA_retriever(t, Δt, pulso)
