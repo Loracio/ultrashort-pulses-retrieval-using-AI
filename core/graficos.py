@@ -108,9 +108,11 @@ def plot_traza(t, Δt, pulso, frecuencias, espectro, TBP=None):
 
     fase_campo = np.unwrap(np.angle(pulso)) 
     fase_campo -=  media(fase_campo, I_pulso)
+    fase_campo = np.where(I_pulso < 1e-10, np.nan, fase_campo)
 
     fase_espectro = np.unwrap(np.angle(espectro)) 
     fase_espectro -=  media(fase_espectro, I_espectro)
+    fase_espectro = np.where(I_espectro < 1e-10, np.nan, fase_espectro)
 
     ax1.plot(t, I_pulso, color='blue', label='Intensidad')
     twin_ax1.plot(t, fase_campo, '-.', color='red')

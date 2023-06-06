@@ -190,15 +190,19 @@ class visualizador_resultados():
 
         fase_campo_pred = np.unwrap(np.angle(pulso_pred)) 
         fase_campo_pred -=  media(fase_campo_pred, I_pulso_pred)
+        fase_campo_pred = np.where(I_pulso_db < 1e-10, np.nan, fase_campo_pred)
 
         fase_espectro_pred = np.unwrap(np.angle(espectro_pred)) 
         fase_espectro_pred -=  media(fase_espectro_pred, I_espectro_pred)
+        fase_espectro_pred = np.where(I_espectro_db < 1e-10, np.nan, fase_espectro_pred)
 
         fase_campo_db = np.unwrap(np.angle(pulso_db)) 
         fase_campo_db -=  media(fase_campo_db, I_pulso_db)
+        fase_campo_db = np.where(I_pulso_db < 1e-10, np.nan, fase_campo_db)
 
         fase_espectro_db = np.unwrap(np.angle(espectro_db)) 
         fase_espectro_db -=  media(fase_espectro_db, I_espectro_db)
+        fase_espectro_db = np.where(I_espectro_db < 1e-10, np.nan, fase_espectro_db)
 
 
         self.line_I_pulso_db, = self.ax3.plot(self.t,I_pulso_db / np.max(I_pulso_db), color='blue', linewidth=3, alpha=0.5, label='Intensidad campo base de datos')
@@ -347,21 +351,25 @@ class visualizador_resultados():
         espectro_pred = DFT(pulso_pred, self.t, self.Δt, self.ω, self.Δω)
         I_espectro_pred = np.abs(espectro_pred)**2
 
-        fase_campo_pred = np.unwrap(np.angle(pulso_pred)) 
-        fase_campo_pred -=  media(fase_campo_pred, I_pulso_pred)
-
-        fase_espectro_pred = np.unwrap(np.angle(espectro_pred)) 
-        fase_espectro_pred -=  media(fase_espectro_pred, I_espectro_pred)
-
         I_pulso_db = np.abs(pulso_db)**2
         espectro_db = DFT(pulso_db, self.t, self.Δt, self.ω, self.Δω)
         I_espectro_db = np.abs(espectro_db)**2
 
+        fase_campo_pred = np.unwrap(np.angle(pulso_pred)) 
+        fase_campo_pred -=  media(fase_campo_pred, I_pulso_pred)
+        fase_campo_pred = np.where(I_pulso_db < 1e-3, np.nan, fase_campo_pred)
+
+        fase_espectro_pred = np.unwrap(np.angle(espectro_pred)) 
+        fase_espectro_pred -=  media(fase_espectro_pred, I_espectro_pred)
+        fase_espectro_pred = np.where(I_espectro_db < 1e-3, np.nan, fase_espectro_pred)
+
         fase_campo_db = np.unwrap(np.angle(pulso_db)) 
         fase_campo_db -=  media(fase_campo_db, I_pulso_db)
+        fase_campo_db = np.where(I_pulso_db < 1e-3, np.nan, fase_campo_db)
 
         fase_espectro_db = np.unwrap(np.angle(espectro_db)) 
         fase_espectro_db -=  media(fase_espectro_db, I_espectro_db)
+        fase_espectro_db = np.where(I_espectro_db < 1e-3, np.nan, fase_espectro_db)
 
         self.line_I_pulso_pred.set_ydata(I_pulso_pred / np.max(I_pulso_pred))
         self.line_fase_campo_pred.set_ydata(fase_campo_pred)
@@ -377,7 +385,7 @@ class visualizador_resultados():
 if __name__ == '__main__':
 
     N = 128
-    NUMERO_PULSOS = 200
+    NUMERO_PULSOS = 1000
 
     duracion_temporal = 1 # Tiempo total de medida de los pulsos de la base de datos (ps)
     t, Δt = np.linspace(-duracion_temporal/2, duracion_temporal/2, num=N, retstep=True)

@@ -76,9 +76,9 @@ if __name__ == '__main__':
     # Mostramos cómo es
     model_dense.summary()
 
-    # # ! Cargamos red entrenada
-    # direccion_modelo = "./IA/NN_models/campo_model_simple_dense.h5"
-    # model_dense = tf.keras.models.load_model(direccion_modelo)
+    # # # ! Cargamos red entrenada
+    # # direccion_modelo = "./IA/NN_models/campo_model_simple_dense.h5"
+    # # model_dense = tf.keras.models.load_model(direccion_modelo)
 
     # Entrenamiento
     history = model_dense.fit(x[:tamaño_entrenamiento], y[:tamaño_entrenamiento], epochs=EPOCHS, batch_size=BATCH_SIZE, validation_data=(x[tamaño_validacion:], y[tamaño_validacion:]))
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     img_cols = x.shape[1]
     img_rows = x.shape[2]
     input_shape = (img_cols,img_rows,input_channels)
-    hidden_layer_neurons = 32
+    hidden_layer_neurons = N
     output_neurons = 2 * N
 
     # Construcción de la arquitectura
@@ -118,7 +118,7 @@ if __name__ == '__main__':
     hidden_maxpool2 = MaxPooling2D((2,2))(hidden_conv2)
     hidden_flatten = Flatten()(hidden_maxpool2)
     hidden_tensor = Dense(hidden_layer_neurons, activation='relu',name='hidden')(hidden_flatten) 
-    output_tensor = Dense(output_neurons, name='output')(hidden_tensor)               
+    output_tensor = Dense(output_neurons, activation='relu', name='output')(hidden_tensor)               
     model_conv = Model(input_tensor,output_tensor) 
 
     # Compilación del modelo

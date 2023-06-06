@@ -137,10 +137,12 @@ class retrieverExpBase():
 
         self.fase_campo_solucion = np.unwrap(np.angle(self.campo)) 
         self.fase_campo_solucion -=  media(self.fase_campo_solucion, self.I_campo_solucion)
+        self.fase_campo_solucion = np.where(self.I_campo_solucion < 1e-6, np.nan, self.fase_campo_solucion)
 
         self.fase_espectro_solucion = np.unwrap(np.angle(DFT(self.campo, self.t, self.Δt, self.ω, self.Δω, r_n=self.r_n, s_j=self.s_j))) 
         self.fase_espectro_solucion -=  media(self.fase_espectro_solucion, self.I_espectral_solucion)
-
+        self.fase_espectro_solucion = np.where(self.I_espectral_solucion < 1e-6, np.nan, self.fase_espectro_solucion)
+        
         self.ax[0][0].plot(self.t, self.I_campo_solucion, color='orange', label='Intensidad campo recuperado')
         twin_ax00.plot(self.t, self.fase_campo_solucion, '-.', color='violet')
         self.ax[0][0].plot(np.nan, '-.', label='Fase campo recuperado', color='violet')
@@ -171,13 +173,13 @@ class retrieverExpBase():
 
         self.Tmn_recuperado_normalizado = self.Tmn / np.max(self.Tmn)
 
-        self.im0 = self.ax[1][0].pcolormesh(2 * np.pi * 300 / λ0 + self.ω, self.t, self.Tmn_medido_normalizado, cmap='YlGnBu_r')
+        self.im0 = self.ax[1][0].pcolormesh(2 * np.pi * 300 / λ0 + self.ω, self.t, self.Tmn_medido_normalizado, cmap='inferno')
         self.fig.colorbar(self.im0, ax=self.ax[1][0])
         self.ax[1][0].set_xlabel("ω (2π/fs)")
         self.ax[1][0].set_ylabel("τ (fs)")
         self.ax[1][0].set_title("Traza del pulso medido")
 
-        self.im1 = self.ax[1][1].pcolormesh(2 * np.pi * 300 / λ0 + self.ω, self.t, self.Tmn_recuperado_normalizado, cmap='YlGnBu_r')
+        self.im1 = self.ax[1][1].pcolormesh(2 * np.pi * 300 / λ0 + self.ω, self.t, self.Tmn_recuperado_normalizado, cmap='inferno')
         self.fig.colorbar(self.im1, ax=self.ax[1][1])
         self.ax[1][1].set_xlabel("ω (2π/fs)")
         self.ax[1][1].set_ylabel("τ (fs)")

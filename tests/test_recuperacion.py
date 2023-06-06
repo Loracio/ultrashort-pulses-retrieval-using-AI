@@ -18,11 +18,11 @@ if __name__ == '__main__':
     """
 
     # Parámetros de la medida
-    numero_de_muestras = 256
+    numero_de_muestras = 128
     duracion_temporal = 1 # Tiempo total de medida de la señal (ps)
     frecuencia_muestreo = numero_de_muestras / duracion_temporal # En THz
 
-    TBP = 2.5
+    TBP = .75
 
     t, Δt = np.linspace(-duracion_temporal/2, duracion_temporal/2, num=numero_de_muestras, retstep=True) # Vector de tiempos. Guardamos la separación entre datos (inversa de la frecuencia de muestreo)
     frecuencias = frecuencias_DFT(numero_de_muestras, Δt)
@@ -43,15 +43,15 @@ if __name__ == '__main__':
     espectro_candidato = DFT(pulso_candidato, t, Δt, ω, Δω)
 
     # Plot intensidad y traza original
-    fig0, ax0 = plot_traza(t, Δt, pulso_candidato, frecuencias, espectro_candidato)
+    # fig0, ax0 = plot_traza(t, Δt, pulso_candidato, frecuencias, espectro_candidato)
 
-    retriever_PCGPA = PCGPA_retriever(t, Δt, pulso)
-    campo_recuperado_PCGPA, espectro_recuperado_PCGPA = retriever_PCGPA.recuperacion(pulso_candidato, 1e-10, max_iter=200)
-    fig_PCGPA, ax_PCGPA = retriever_PCGPA.plot()
+    # retriever_PCGPA = PCGPA_retriever(t, Δt, pulso)
+    # campo_recuperado_PCGPA, espectro_recuperado_PCGPA = retriever_PCGPA.recuperacion(pulso_candidato, 1e-10, max_iter=500)
+    # fig_PCGPA, ax_PCGPA = retriever_PCGPA.plot()
 
     retriever_GPA = GPA_retriever(t, Δt, pulso)
-    campo_recuperado_GPA, espectro_recuperado_GPA = retriever_GPA.recuperacion(pulso_candidato, 1e-10, max_iter=200)
-    fig_GPA, ax_GPA = retriever_GPA.plot()
+    campo_recuperado_GPA, espectro_recuperado_GPA = retriever_GPA.recuperacion(pulso_candidato, 1e-20, max_iter=200)
+    # fig_GPA, ax_GPA = retriever_GPA.plot()
 
-    plt.show()
+    # plt.show()
 

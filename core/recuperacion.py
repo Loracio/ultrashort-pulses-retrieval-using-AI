@@ -430,15 +430,19 @@ class GPA_retriever(retrieverBase):
 
         self.fase_campo_medido = np.unwrap(np.angle(self.campo_medido)) 
         self.fase_campo_medido -=  media(self.fase_campo_medido, self.I_campo_medido)
+        self.fase_campo_medido = np.where(self.I_campo_medido < 1e-10, np.nan, self.fase_campo_medido)
 
         self.fase_campo_solucion = np.unwrap(np.angle(self.campo)) 
         self.fase_campo_solucion -=  media(self.fase_campo_solucion, self.I_campo_solucion)
+        self.fase_campo_solucion = np.where(self.I_campo_solucion < 1e-10, np.nan, self.fase_campo_solucion)
 
         self.fase_espectro_medido = np.unwrap(np.angle(self.espectro_medido)) 
         self.fase_espectro_medido -=  media(self.fase_espectro_medido, self.I_espectral_medido)
+        self.fase_espectro_medido = np.where(self.I_espectral_medido < 1e-10, np.nan, self.fase_espectro_medido)
 
         self.fase_espectro_solucion = np.unwrap(np.angle(DFT(self.campo, self.t, self.Δt, self.ω, self.Δω, r_n=self.r_n, s_j=self.s_j))) 
         self.fase_espectro_solucion -=  media(self.fase_espectro_solucion, self.I_espectral_solucion)
+        self.fase_espectro_solucion = np.where(self.I_espectral_solucion < 1e-10, np.nan, self.fase_espectro_solucion)
 
         self.ax[0][0].plot(self.t,self. I_campo_medido, color='blue', linewidth=3, label='Intensidad campo medido')
         twin_ax00.plot(self.t, self.fase_campo_medido, '-.', color='red')
@@ -1280,15 +1284,19 @@ class PCGPA_retriever():
 
         self.fase_campo_medido = np.unwrap(np.angle(self.campo_medido)) 
         self.fase_campo_medido -=  media(self.fase_campo_medido, self.I_campo_medido)
+        self.fase_campo_medido = np.where(self.I_campo_medido < 1e-10, np.nan, self.fase_campo_medido)
 
         self.fase_campo_solucion = np.unwrap(np.angle(self.campo)) 
         self.fase_campo_solucion -=  media(self.fase_campo_solucion, self.I_campo_solucion)
+        self.fase_campo_solucion = np.where(self.I_campo_solucion < 1e-10, np.nan, self.fase_campo_solucion)
 
         self.fase_espectro_medido = np.unwrap(np.angle(self.espectro_medido)) 
         self.fase_espectro_medido -=  media(self.fase_espectro_medido, self.I_espectral_medido)
+        self.fase_espectro_medido = np.where(self.I_espectral_medido < 1e-10, np.nan, self.fase_espectro_medido)
 
         self.fase_espectro_solucion = np.unwrap(np.angle(DFT(self.campo, self.t, self.Δt, self.ω, self.Δω, r_n=self.r_n, s_j=self.s_j))) 
         self.fase_espectro_solucion -=  media(self.fase_espectro_solucion, self.I_espectral_solucion)
+        self.fase_espectro_solucion = np.where(self.I_espectral_solucion < 1e-10, np.nan, self.fase_espectro_solucion)
 
         self.ax[0][0].plot(self.t,self. I_campo_medido, color='blue', linewidth=3, label='Intensidad campo medido')
         twin_ax00.plot(self.t, self.fase_campo_medido, '-.', color='red')
