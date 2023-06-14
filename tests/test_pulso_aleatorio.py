@@ -58,11 +58,11 @@ if __name__ == '__main__':
 
     fase_campo = np.unwrap(np.angle(pulso)) 
     fase_campo -=  media(fase_campo, I_pulso)
-    fase_campo = np.where(I_pulso < 1e-10, np.nan, fase_campo)
+    fase_campo = np.where(I_pulso < 1e-12, np.nan, fase_campo)
 
     fase_espectro = np.unwrap(np.angle(espectro)) 
     fase_espectro -=  media(fase_espectro, I_espectro)
-    fase_espectro = np.where(I_espectro < 1e-10, np.nan, fase_espectro)
+    fase_espectro = np.where(I_espectro < 1e-12, np.nan, fase_espectro)
 
     ax1.plot(t, I_pulso, color='blue', label='Intensidad')
     twin_ax1.plot(t, fase_campo, '-.', color='red')
@@ -99,7 +99,7 @@ if __name__ == '__main__':
     T = traza(pulso, t, Δt, numero_de_muestras)
     T_normalizada = T / np.max(T)
 
-    im = ax3.pcolormesh(frecuencias, delays, T_normalizada, cmap='inferno')
+    im = ax3.pcolormesh(frecuencias, delays, T_normalizada, cmap='YlGnBu_r')
     fig.colorbar(im, ax=ax3)
     ax3.set_xlabel("Frecuencia (1/ps)")
     ax3.set_ylabel("Retraso (ps)")

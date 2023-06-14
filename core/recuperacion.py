@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from .fourier import *
+from .fourier import DFT, IDFT
 from .unidades import convertir
 from .utiles import media
 
@@ -407,6 +407,88 @@ class GPA_retriever(retrieverBase):
         for j in range(self.N):
             self.campo[j] -= self.γ * self.gradZ[j]
 
+    # def plot(self):
+    #     """
+    #     Representa las intensidades temporales y espectrales tanto del pulso original como del pulso solución,
+    #     además de sus correspondientes trazas.
+
+    #     Devuelve:
+    #         tuple(matplotlib Figure, matplotlib Axis)
+    #     """
+
+    #     self.fig, self.ax = plt.subplots(2,2)
+
+    #     twin_ax00 = self.ax[0][0].twinx()
+    #     twin_ax01 = self.ax[0][1].twinx()
+        
+    #     # Plots de la primera fila: intensidad e intensidad espectral del pulso y solución
+    #     self.I_campo_medido = np.abs(self.campo_medido)**2
+    #     self.I_espectral_medido = np.abs(self.espectro_medido)**2
+
+    #     self.I_campo_solucion = np.abs(self.campo)**2
+    #     self.I_espectral_solucion = np.abs(DFT(self.campo, self.t, self.Δt, self.ω, self.Δω, r_n=self.r_n, s_j=self.s_j))**2
+
+    #     self.fase_campo_medido = np.unwrap(np.angle(self.campo_medido)) 
+    #     self.fase_campo_medido -=  media(self.fase_campo_medido, self.I_campo_medido)
+    #     self.fase_campo_medido = np.where(self.I_campo_medido < 1e-10, np.nan, self.fase_campo_medido)
+
+    #     self.fase_campo_solucion = np.unwrap(np.angle(self.campo)) 
+    #     self.fase_campo_solucion -=  media(self.fase_campo_solucion, self.I_campo_solucion)
+    #     self.fase_campo_solucion = np.where(self.I_campo_solucion < 1e-10, np.nan, self.fase_campo_solucion)
+
+    #     self.fase_espectro_medido = np.unwrap(np.angle(self.espectro_medido)) 
+    #     self.fase_espectro_medido -=  media(self.fase_espectro_medido, self.I_espectral_medido)
+    #     self.fase_espectro_medido = np.where(self.I_espectral_medido < 1e-10, np.nan, self.fase_espectro_medido)
+
+    #     self.fase_espectro_solucion = np.unwrap(np.angle(DFT(self.campo, self.t, self.Δt, self.ω, self.Δω, r_n=self.r_n, s_j=self.s_j))) 
+    #     self.fase_espectro_solucion -=  media(self.fase_espectro_solucion, self.I_espectral_solucion)
+    #     self.fase_espectro_solucion = np.where(self.I_espectral_solucion < 1e-10, np.nan, self.fase_espectro_solucion)
+
+    #     self.ax[0][0].plot(self.t,self. I_campo_medido, color='blue', linewidth=3, label='Intensidad campo medido')
+    #     twin_ax00.plot(self.t, self.fase_campo_medido, '-.', color='red')
+    #     self.ax[0][0].plot(np.nan, '-.', label='Fase', color='red')
+    #     self.ax[0][0].plot(self.t,self. I_campo_solucion, color='orange', label='Intensidad campo recuperado')
+    #     twin_ax00.plot(self.t, self.fase_campo_solucion, '-.', color='violet')
+    #     self.ax[0][0].plot(np.nan, '-.', label='Fase campo recuperado', color='violet')
+    #     self.ax[0][0].set_xlabel("Tiempo (ps)")
+    #     self.ax[0][0].set_ylabel("Intensidad (u.a.)")
+    #     twin_ax00.set_ylabel("Fase (rad)")
+    #     self.ax[0][0].set_title("Dominio temporal")
+    #     self.ax[0][0].grid()
+
+    #     self.ax[0][1].plot(self.frecuencias, self.I_espectral_medido, color='blue', linewidth=3, label='Intensidad espectral medida')
+    #     twin_ax01.plot(self.frecuencias, self.fase_espectro_medido, '-.', color='red')
+    #     self.ax[0][1].plot(np.nan, '-.', label='Fase', color='red')
+    #     self.ax[0][1].plot(self.frecuencias, self.I_espectral_solucion, color='orange', label='Intensidad espectral recuperada')
+    #     twin_ax01.plot(self.frecuencias, self.fase_espectro_solucion, '-.', color='violet')
+    #     self.ax[0][1].plot(np.nan, '-.', label='Fase espectral recuperada', color='violet')
+    #     self.ax[0][1].set_xlabel("Frecuencia (1 / ps)")
+    #     self.ax[0][1].set_ylabel("Intensidad (u.a.)")
+    #     twin_ax01.set_ylabel("Fase (rad)")
+    #     self.ax[0][1].set_title("Dominio frecuencial")
+    #     self.ax[0][1].grid()
+
+    #     self.fig.legend(*self.ax[0][0].get_legend_handles_labels(), loc='upper center', ncols=4)
+
+    #     # Plots de la segunda fila: traza del pulso original y del pulso recuperado
+        # self.calcula_Tmn()
+        # self.Tmn_recuperado_normalizado = self.Tmn / np.max(self.Tmn)
+        # self.Tmn_medido_normalizado = self.Tmn_medido / np.max(self.Tmn_medido)
+
+        # self.im0 = self.ax[1][0].pcolormesh(self.frecuencias, self.bin_delays * self.Δt, self.Tmn_medido_normalizado, cmap='YlGnBu_r')
+        # self.fig.colorbar(self.im0, ax=self.ax[1][0])
+        # self.ax[1][0].set_xlabel("Frecuencia (1/ps)")
+        # self.ax[1][0].set_ylabel("Retraso (ps)")
+        # self.ax[1][0].set_title("Traza del pulso medido")
+
+        # self.im1 = self.ax[1][1].pcolormesh(self.frecuencias, self.bin_delays * self.Δt, self.Tmn_recuperado_normalizado, cmap='YlGnBu_r')
+        # self.fig.colorbar(self.im1, ax=self.ax[1][1])
+        # self.ax[1][1].set_xlabel("Frecuencia (1/ps)")
+        # self.ax[1][1].set_ylabel("Retraso (ps)")
+        # self.ax[1][1].set_title(f"Traza del pulso recuperado, R = {self.solucion_minimo_error[1]:.2E}")
+
+    #     return self.fig, self.ax
+
     def plot(self):
         """
         Representa las intensidades temporales y espectrales tanto del pulso original como del pulso solución,
@@ -416,10 +498,10 @@ class GPA_retriever(retrieverBase):
             tuple(matplotlib Figure, matplotlib Axis)
         """
 
-        self.fig, self.ax = plt.subplots(2,2)
+        self.fig0, self.ax00 = plt.subplots()
 
-        twin_ax00 = self.ax[0][0].twinx()
-        twin_ax01 = self.ax[0][1].twinx()
+        twin_ax00 = self.ax00.twinx()
+        
         
         # Plots de la primera fila: intensidad e intensidad espectral del pulso y solución
         self.I_campo_medido = np.abs(self.campo_medido)**2
@@ -444,50 +526,60 @@ class GPA_retriever(retrieverBase):
         self.fase_espectro_solucion -=  media(self.fase_espectro_solucion, self.I_espectral_solucion)
         self.fase_espectro_solucion = np.where(self.I_espectral_solucion < 1e-10, np.nan, self.fase_espectro_solucion)
 
-        self.ax[0][0].plot(self.t,self. I_campo_medido, color='blue', linewidth=3, label='Intensidad campo medido')
+        self.ax00.plot(self.t,self. I_campo_medido, color='blue', linewidth=3, label='Intensidad campo medido')
         twin_ax00.plot(self.t, self.fase_campo_medido, '-.', color='red')
-        self.ax[0][0].plot(np.nan, '-.', label='Fase', color='red')
-        self.ax[0][0].plot(self.t,self. I_campo_solucion, color='orange', label='Intensidad campo recuperado')
+        self.ax00.plot(np.nan, '-.', label='Fase', color='red')
+        self.ax00.plot(self.t,self. I_campo_solucion, color='orange', label='Intensidad campo recuperado')
         twin_ax00.plot(self.t, self.fase_campo_solucion, '-.', color='violet')
-        self.ax[0][0].plot(np.nan, '-.', label='Fase campo recuperado', color='violet')
-        self.ax[0][0].set_xlabel("Tiempo (ps)")
-        self.ax[0][0].set_ylabel("Intensidad (u.a.)")
+        self.ax00.plot(np.nan, '-.', label='Fase campo recuperado', color='violet')
+        self.ax00.set_xlabel("Tiempo (ps)")
+        self.ax00.set_ylabel("Intensidad (u.a.)")
         twin_ax00.set_ylabel("Fase (rad)")
-        self.ax[0][0].set_title("Dominio temporal")
-        self.ax[0][0].grid()
+        # self.ax00.set_title("Dominio temporal")
+        self.ax00.grid()
 
-        self.ax[0][1].plot(self.frecuencias, self.I_espectral_medido, color='blue', linewidth=3, label='Intensidad espectral medida')
+        self.fig1, self.ax01 = plt.subplots()
+
+        twin_ax01 = self.ax01.twinx()
+
+        self.ax01.plot(self.frecuencias, self.I_espectral_medido, color='blue', linewidth=3, label='Intensidad espectral medida')
         twin_ax01.plot(self.frecuencias, self.fase_espectro_medido, '-.', color='red')
-        self.ax[0][1].plot(np.nan, '-.', label='Fase', color='red')
-        self.ax[0][1].plot(self.frecuencias, self.I_espectral_solucion, color='orange', label='Intensidad espectral recuperada')
+        self.ax01.plot(np.nan, '-.', label='Fase', color='red')
+        self.ax01.plot(self.frecuencias, self.I_espectral_solucion, color='orange', label='Intensidad espectral recuperada')
         twin_ax01.plot(self.frecuencias, self.fase_espectro_solucion, '-.', color='violet')
-        self.ax[0][1].plot(np.nan, '-.', label='Fase espectral recuperada', color='violet')
-        self.ax[0][1].set_xlabel("Frecuencia (1 / ps)")
-        self.ax[0][1].set_ylabel("Intensidad (u.a.)")
+        self.ax01.plot(np.nan, '-.', label='Fase espectral recuperada', color='violet')
+        self.ax01.set_xlabel("Frecuencia (1 / ps)")
+        self.ax01.set_ylabel("Intensidad (u.a.)")
         twin_ax01.set_ylabel("Fase (rad)")
-        self.ax[0][1].set_title("Dominio frecuencial")
-        self.ax[0][1].grid()
+        # self.ax01.set_title("Dominio frecuencial")
+        self.ax01.grid()
 
-        self.fig.legend(*self.ax[0][0].get_legend_handles_labels(), loc='upper center', ncols=4)
+        # self.fig.legend(*self.ax[0][0].get_legend_handles_labels(), loc='upper center', ncols=4)
 
         # Plots de la segunda fila: traza del pulso original y del pulso recuperado
+        self.calcula_Tmn()
+
+        # Por la manera de coger los delays la traza estaría desplazada si la representamos tal cual, hay que manipularla:
         self.calcula_Tmn()
         self.Tmn_recuperado_normalizado = self.Tmn / np.max(self.Tmn)
         self.Tmn_medido_normalizado = self.Tmn_medido / np.max(self.Tmn_medido)
 
-        self.im0 = self.ax[1][0].pcolormesh(self.frecuencias, self.bin_delays * self.Δt, self.Tmn_medido_normalizado, cmap='inferno')
-        self.fig.colorbar(self.im0, ax=self.ax[1][0])
-        self.ax[1][0].set_xlabel("Frecuencia (1/ps)")
-        self.ax[1][0].set_ylabel("Retraso (ps)")
-        self.ax[1][0].set_title("Traza del pulso medido")
+        self.fig3, self.ax10 = plt.subplots()
 
-        self.im1 = self.ax[1][1].pcolormesh(self.frecuencias, self.bin_delays * self.Δt, self.Tmn_recuperado_normalizado, cmap='inferno')
-        self.fig.colorbar(self.im1, ax=self.ax[1][1])
-        self.ax[1][1].set_xlabel("Frecuencia (1/ps)")
-        self.ax[1][1].set_ylabel("Retraso (ps)")
-        self.ax[1][1].set_title(f"Traza del pulso recuperado, R = {self.solucion_minimo_error[1]:.2E}")
+        self.im0 = self.ax10.pcolormesh(self.frecuencias, self.bin_delays * self.Δt, self.Tmn_medido_normalizado, cmap='YlGnBu_r')
+        self.fig3.colorbar(self.im0, ax=self.ax10)
+        self.ax10.set_xlabel("Frecuencia (1/ps)")
+        self.ax10.set_ylabel("Retraso (ps)")
+        # self.ax10.set_title("Traza del pulso medido")
 
-        return self.fig, self.ax
+        self.fig4, self.ax11 = plt.subplots()
+
+        self.im1 = self.ax11.pcolormesh(self.frecuencias, self.bin_delays * self.Δt, self.Tmn_recuperado_normalizado, cmap='YlGnBu_r')
+        self.fig4.colorbar(self.im1, ax=self.ax11)
+        self.ax11.set_xlabel("Frecuencia (1/ps)")
+        self.ax11.set_ylabel("Retraso (ps)")
+        self.ax11.set_title(f"R = {self.solucion_minimo_error[1]:.2E}")
+
 
 class COPRA_retriever(retrieverBase):
     """
@@ -956,13 +1048,13 @@ class COPRA_retriever(retrieverBase):
         self.Tmn_recuperado_normalizado = self.Tmn / np.max(self.Tmn)
         self.Tmn_medido_normalizado = self.Tmn_medido / np.max(self.Tmn_medido)
 
-        self.im0 = self.ax[1][0].pcolormesh(self.frecuencias, self.bin_delays * self.Δt, self.Tmn_medido_normalizado, cmap='inferno')
+        self.im0 = self.ax[1][0].pcolormesh(self.frecuencias, self.bin_delays * self.Δt, self.Tmn_medido_normalizado, cmap='YlGnBu_r')
         self.fig.colorbar(self.im0, ax=self.ax[1][0])
         self.ax[1][0].set_xlabel("Frecuencia (1/ps)")
         self.ax[1][0].set_ylabel("Retraso (ps)")
         self.ax[1][0].set_title("Traza del pulso medido")
 
-        self.im1 = self.ax[1][1].pcolormesh(self.frecuencias, self.bin_delays * self.Δt, self.Tmn_recuperado_normalizado, cmap='inferno')
+        self.im1 = self.ax[1][1].pcolormesh(self.frecuencias, self.bin_delays * self.Δt, self.Tmn_recuperado_normalizado, cmap='YlGnBu_r')
         self.fig.colorbar(self.im1, ax=self.ax[1][1])
         self.ax[1][1].set_xlabel("Frecuencia (1/ps)")
         self.ax[1][1].set_ylabel("Retraso (ps)")
@@ -1261,6 +1353,98 @@ class PCGPA_retriever():
         U, s, V = np.linalg.svd(self.Smk_siguiente)
         self.campo = U[:, 0] * np.sqrt(s[0])
 
+    # def plot(self):
+    #     """
+    #     Representa las intensidades temporales y espectrales tanto del pulso original como del pulso solución,
+    #     además de sus correspondientes trazas.
+
+    #     Devuelve:
+    #         tuple(matplotlib Figure, matplotlib Axis)
+    #     """
+
+    #     self.fig, self.ax = plt.subplots(2,2)
+
+    #     twin_ax00 = self.ax[0][0].twinx()
+    #     twin_ax01 = self.ax[0][1].twinx()
+        
+    #     # Plots de la primera fila: intensidad e intensidad espectral del pulso y solución
+    #     self.I_campo_medido = np.abs(self.campo_medido)**2
+    #     self.I_espectral_medido = np.abs(self.espectro_medido)**2
+
+    #     self.I_campo_solucion = np.abs(self.campo)**2
+    #     self.I_espectral_solucion = np.abs(DFT(self.campo, self.t, self.Δt, self.ω, self.Δω, r_n=self.r_n, s_j=self.s_j))**2
+
+    #     self.fase_campo_medido = np.unwrap(np.angle(self.campo_medido)) 
+    #     self.fase_campo_medido -=  media(self.fase_campo_medido, self.I_campo_medido)
+    #     self.fase_campo_medido = np.where(self.I_campo_medido < 1e-10, np.nan, self.fase_campo_medido)
+
+    #     self.fase_campo_solucion = np.unwrap(np.angle(self.campo)) 
+    #     self.fase_campo_solucion -=  media(self.fase_campo_solucion, self.I_campo_solucion)
+    #     self.fase_campo_solucion = np.where(self.I_campo_solucion < 1e-10, np.nan, self.fase_campo_solucion)
+
+    #     self.fase_espectro_medido = np.unwrap(np.angle(self.espectro_medido)) 
+    #     self.fase_espectro_medido -=  media(self.fase_espectro_medido, self.I_espectral_medido)
+    #     self.fase_espectro_medido = np.where(self.I_espectral_medido < 1e-10, np.nan, self.fase_espectro_medido)
+
+    #     self.fase_espectro_solucion = np.unwrap(np.angle(DFT(self.campo, self.t, self.Δt, self.ω, self.Δω, r_n=self.r_n, s_j=self.s_j))) 
+    #     self.fase_espectro_solucion -=  media(self.fase_espectro_solucion, self.I_espectral_solucion)
+    #     self.fase_espectro_solucion = np.where(self.I_espectral_solucion < 1e-10, np.nan, self.fase_espectro_solucion)
+
+    #     self.ax[0][0].plot(self.t,self. I_campo_medido, color='blue', linewidth=3, label='Intensidad campo medido')
+    #     twin_ax00.plot(self.t, self.fase_campo_medido, '-.', color='red')
+    #     self.ax[0][0].plot(np.nan, '-.', label='Fase', color='red')
+    #     self.ax[0][0].plot(self.t,self. I_campo_solucion, color='orange', label='Intensidad campo recuperado')
+    #     twin_ax00.plot(self.t, self.fase_campo_solucion, '-.', color='violet')
+    #     self.ax[0][0].plot(np.nan, '-.', label='Fase campo recuperado', color='violet')
+    #     self.ax[0][0].set_xlabel("Tiempo (ps)")
+    #     self.ax[0][0].set_ylabel("Intensidad (u.a.)")
+    #     twin_ax00.set_ylabel("Fase (rad)")
+    #     self.ax[0][0].set_title("Dominio temporal")
+    #     self.ax[0][0].grid()
+
+    #     self.ax[0][1].plot(self.frecuencias, self.I_espectral_medido, color='blue', linewidth=3, label='Intensidad espectral medida')
+    #     twin_ax01.plot(self.frecuencias, self.fase_espectro_medido, '-.', color='red')
+    #     self.ax[0][1].plot(np.nan, '-.', label='Fase', color='red')
+    #     self.ax[0][1].plot(self.frecuencias, self.I_espectral_solucion, color='orange', label='Intensidad espectral recuperada')
+    #     twin_ax01.plot(self.frecuencias, self.fase_espectro_solucion, '-.', color='violet')
+    #     self.ax[0][1].plot(np.nan, '-.', label='Fase espectral recuperada', color='violet')
+    #     self.ax[0][1].set_xlabel("Frecuencia (1 / ps)")
+    #     self.ax[0][1].set_ylabel("Intensidad (u.a.)")
+    #     twin_ax01.set_ylabel("Fase (rad)")
+    #     self.ax[0][1].set_title("Dominio frecuencial")
+    #     self.ax[0][1].grid()
+
+    #     self.fig.legend(*self.ax[0][0].get_legend_handles_labels(), loc='upper center', ncols=4)
+
+    #     # Plots de la segunda fila: traza del pulso original y del pulso recuperado
+    #     self.calcula_Tmn()
+
+    #     # Por la manera de coger los delays la traza estaría desplazada si la representamos tal cual, hay que manipularla:
+    #     self.Tmn_medido_desplazado = np.zeros((self.M, self.N), dtype=self.Tmn.dtype)
+    #     self.Tmn_medido_desplazado[:int(self.M/2)][:] = self.Tmn_medido[int(self.M/2):][:]
+    #     self.Tmn_medido_desplazado[int(self.M/2):][:] = self.Tmn_medido[:int(self.M/2)][:]
+    #     self.Tmn_medido_normalizado = self.Tmn_medido_desplazado / np.max(self.Tmn_medido_desplazado)
+
+    #     self.Tmn_recuperado_desplazado = np.zeros((self.M, self.N), dtype=self.Tmn.dtype)
+    #     self.Tmn_recuperado_desplazado[:int(self.M/2)][:] = self.Tmn[int(self.M/2):][:]
+    #     self.Tmn_recuperado_desplazado[int(self.M/2):][:] = self.Tmn[:int(self.M/2)][:]
+    #     self.Tmn_recuperado_normalizado = self.Tmn_recuperado_desplazado / np.max(self.Tmn_recuperado_desplazado)
+
+    #     self.im0 = self.ax[1][0].pcolormesh(self.frecuencias, self.t, self.Tmn_medido_normalizado, cmap='YlGnBu_r')
+    #     self.fig.colorbar(self.im0, ax=self.ax[1][0])
+    #     self.ax[1][0].set_xlabel("Frecuencia (1/ps)")
+    #     self.ax[1][0].set_ylabel("Retraso (ps)")
+    #     self.ax[1][0].set_title("Traza del pulso medido")
+
+    #     self.im1 = self.ax[1][1].pcolormesh(self.frecuencias, self.t, self.Tmn_recuperado_normalizado, cmap='YlGnBu_r')
+    #     self.fig.colorbar(self.im1, ax=self.ax[1][1])
+    #     self.ax[1][1].set_xlabel("Frecuencia (1/ps)")
+    #     self.ax[1][1].set_ylabel("Retraso (ps)")
+    #     self.ax[1][1].set_title(f"Traza del pulso recuperado, R = {self.solucion_minimo_error[1]:.2E}")
+
+    #     return self.fig, self.ax
+
+
     def plot(self):
         """
         Representa las intensidades temporales y espectrales tanto del pulso original como del pulso solución,
@@ -1270,10 +1454,10 @@ class PCGPA_retriever():
             tuple(matplotlib Figure, matplotlib Axis)
         """
 
-        self.fig, self.ax = plt.subplots(2,2)
+        self.fig0, self.ax00 = plt.subplots()
 
-        twin_ax00 = self.ax[0][0].twinx()
-        twin_ax01 = self.ax[0][1].twinx()
+        twin_ax00 = self.ax00.twinx()
+        
         
         # Plots de la primera fila: intensidad e intensidad espectral del pulso y solución
         self.I_campo_medido = np.abs(self.campo_medido)**2
@@ -1298,31 +1482,35 @@ class PCGPA_retriever():
         self.fase_espectro_solucion -=  media(self.fase_espectro_solucion, self.I_espectral_solucion)
         self.fase_espectro_solucion = np.where(self.I_espectral_solucion < 1e-10, np.nan, self.fase_espectro_solucion)
 
-        self.ax[0][0].plot(self.t,self. I_campo_medido, color='blue', linewidth=3, label='Intensidad campo medido')
+        self.ax00.plot(self.t,self. I_campo_medido, color='blue', linewidth=3, label='Intensidad campo medido')
         twin_ax00.plot(self.t, self.fase_campo_medido, '-.', color='red')
-        self.ax[0][0].plot(np.nan, '-.', label='Fase', color='red')
-        self.ax[0][0].plot(self.t,self. I_campo_solucion, color='orange', label='Intensidad campo recuperado')
+        self.ax00.plot(np.nan, '-.', label='Fase', color='red')
+        self.ax00.plot(self.t,self. I_campo_solucion, color='orange', label='Intensidad campo recuperado')
         twin_ax00.plot(self.t, self.fase_campo_solucion, '-.', color='violet')
-        self.ax[0][0].plot(np.nan, '-.', label='Fase campo recuperado', color='violet')
-        self.ax[0][0].set_xlabel("Tiempo (ps)")
-        self.ax[0][0].set_ylabel("Intensidad (u.a.)")
+        self.ax00.plot(np.nan, '-.', label='Fase campo recuperado', color='violet')
+        self.ax00.set_xlabel("Tiempo (ps)")
+        self.ax00.set_ylabel("Intensidad (u.a.)")
         twin_ax00.set_ylabel("Fase (rad)")
-        self.ax[0][0].set_title("Dominio temporal")
-        self.ax[0][0].grid()
+        self.ax00.set_title("Dominio temporal")
+        self.ax00.grid()
 
-        self.ax[0][1].plot(self.frecuencias, self.I_espectral_medido, color='blue', linewidth=3, label='Intensidad espectral medida')
+        self.fig1, self.ax01 = plt.subplots()
+
+        twin_ax01 = self.ax01.twinx()
+
+        self.ax01.plot(self.frecuencias, self.I_espectral_medido, color='blue', linewidth=3, label='Intensidad espectral medida')
         twin_ax01.plot(self.frecuencias, self.fase_espectro_medido, '-.', color='red')
-        self.ax[0][1].plot(np.nan, '-.', label='Fase', color='red')
-        self.ax[0][1].plot(self.frecuencias, self.I_espectral_solucion, color='orange', label='Intensidad espectral recuperada')
+        self.ax01.plot(np.nan, '-.', label='Fase', color='red')
+        self.ax01.plot(self.frecuencias, self.I_espectral_solucion, color='orange', label='Intensidad espectral recuperada')
         twin_ax01.plot(self.frecuencias, self.fase_espectro_solucion, '-.', color='violet')
-        self.ax[0][1].plot(np.nan, '-.', label='Fase espectral recuperada', color='violet')
-        self.ax[0][1].set_xlabel("Frecuencia (1 / ps)")
-        self.ax[0][1].set_ylabel("Intensidad (u.a.)")
+        self.ax01.plot(np.nan, '-.', label='Fase espectral recuperada', color='violet')
+        self.ax01.set_xlabel("Frecuencia (1 / ps)")
+        self.ax01.set_ylabel("Intensidad (u.a.)")
         twin_ax01.set_ylabel("Fase (rad)")
-        self.ax[0][1].set_title("Dominio frecuencial")
-        self.ax[0][1].grid()
+        self.ax01.set_title("Dominio frecuencial")
+        self.ax01.grid()
 
-        self.fig.legend(*self.ax[0][0].get_legend_handles_labels(), loc='upper center', ncols=4)
+        # self.fig.legend(*self.ax[0][0].get_legend_handles_labels(), loc='upper center', ncols=4)
 
         # Plots de la segunda fila: traza del pulso original y del pulso recuperado
         self.calcula_Tmn()
@@ -1338,16 +1526,18 @@ class PCGPA_retriever():
         self.Tmn_recuperado_desplazado[int(self.M/2):][:] = self.Tmn[:int(self.M/2)][:]
         self.Tmn_recuperado_normalizado = self.Tmn_recuperado_desplazado / np.max(self.Tmn_recuperado_desplazado)
 
-        self.im0 = self.ax[1][0].pcolormesh(self.frecuencias, self.t, self.Tmn_medido_normalizado, cmap='inferno')
-        self.fig.colorbar(self.im0, ax=self.ax[1][0])
-        self.ax[1][0].set_xlabel("Frecuencia (1/ps)")
-        self.ax[1][0].set_ylabel("Retraso (ps)")
-        self.ax[1][0].set_title("Traza del pulso medido")
+        self.fig3, self.ax10 = plt.subplots()
 
-        self.im1 = self.ax[1][1].pcolormesh(self.frecuencias, self.t, self.Tmn_recuperado_normalizado, cmap='inferno')
-        self.fig.colorbar(self.im1, ax=self.ax[1][1])
-        self.ax[1][1].set_xlabel("Frecuencia (1/ps)")
-        self.ax[1][1].set_ylabel("Retraso (ps)")
-        self.ax[1][1].set_title(f"Traza del pulso recuperado, R = {self.solucion_minimo_error[1]:.2E}")
+        self.im0 = self.ax10.pcolormesh(self.frecuencias, self.t, self.Tmn_medido_normalizado, cmap='YlGnBu_r')
+        self.fig.colorbar(self.im0, ax=self.ax10)
+        self.ax10.set_xlabel("Frecuencia (1/ps)")
+        self.ax10.set_ylabel("Retraso (ps)")
+        self.ax10.set_title("Traza del pulso medido")
 
-        return self.fig, self.ax
+        self.fig4, self.ax11 = plt.subplots()
+
+        self.im1 = self.ax11.pcolormesh(self.frecuencias, self.t, self.Tmn_recuperado_normalizado, cmap='YlGnBu_r')
+        self.fig.colorbar(self.im1, ax=self.ax11)
+        self.ax11.set_xlabel("Frecuencia (1/ps)")
+        self.ax11.set_ylabel("Retraso (ps)")
+        self.ax11.set_title(f"Traza del pulso recuperado, R = {self.solucion_minimo_error[1]:.2E}")

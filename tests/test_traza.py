@@ -8,7 +8,7 @@ plt.rcParams.update({'font.size': 20}) # Tamaño de la fuente del plot
 
 if __name__ == '__main__':
 
-# Parámetros de la medida
+    # Parámetros de la medida
     numero_de_muestras = 512
     duracion_temporal = .5 # Tiempo total de medida de la señal (ps)
     frecuencia_muestreo = numero_de_muestras / duracion_temporal # En THz
@@ -69,13 +69,19 @@ if __name__ == '__main__':
     # ax[0][0].set_title("Dominio temporal")
     ax[0][0].grid()
     # ax[0][0].legend()
+    ax[0][0].yaxis.label.set_color('blue')
+    ax[0][0].tick_params(axis='y', colors='blue')
+    ax[0][0].spines['left'].set_color('blue')
+    twin_ax1.spines['right'].set_color('red')
+    twin_ax1.tick_params(axis='y', colors='red')
+    twin_ax1.yaxis.label.set_color('red')
 
     T = traza(pulso, t, Δt, t.size)
     traza_normalizada = T / np.max(T)
 
     delays = np.linspace(-(t.size - 1) * Δt, (t.size - 1) * Δt, num=2 * t.size - 1)
 
-    im = ax[1][0].pcolormesh(frecuencias, delays, traza_normalizada, cmap='inferno')
+    im = ax[1][0].pcolormesh(frecuencias, delays, traza_normalizada, cmap='YlGnBu_r')
     fig.colorbar(im, ax=ax[1][0])
     ax[1][0].set_xlabel("Frecuencia (1/ps)")
     ax[1][0].set_ylabel("Retraso (ps)")
@@ -109,13 +115,19 @@ if __name__ == '__main__':
     # ax[0][1].set_title("Dominio temporal")
     ax[0][1].grid()
     # ax[0][1].legend()
+    ax[0][1].yaxis.label.set_color('blue')
+    ax[0][1].tick_params(axis='y', colors='blue')
+    ax[0][1].spines['left'].set_color('blue')
+    twin_ax1.spines['right'].set_color('red')
+    twin_ax1.tick_params(axis='y', colors='red')
+    twin_ax1.yaxis.label.set_color('red')
 
     T = traza(pulso, t, Δt, t.size)
     traza_normalizada = T / np.max(T)
 
     delays = np.linspace(-(t.size - 1) * Δt, (t.size - 1) * Δt, num=2 * t.size - 1)
 
-    im = ax[1][1].pcolormesh(frecuencias, delays, traza_normalizada, cmap='inferno')
+    im = ax[1][1].pcolormesh(frecuencias, delays, traza_normalizada, cmap='YlGnBu_r')
     fig.colorbar(im, ax=ax[1][1])
     ax[1][1].set_xlabel("Frecuencia (1/ps)")
     ax[1][1].set_ylabel("Retraso (ps)")
@@ -148,13 +160,19 @@ if __name__ == '__main__':
     # ax[0][2].set_title("Dominio temporal")
     ax[0][2].grid()
     # ax[0][2].legend()
+    ax[0][2].yaxis.label.set_color('blue')
+    ax[0][2].tick_params(axis='y', colors='blue')
+    ax[0][2].spines['left'].set_color('blue')
+    twin_ax1.spines['right'].set_color('red')
+    twin_ax1.tick_params(axis='y', colors='red')
+    twin_ax1.yaxis.label.set_color('red')
 
     T = traza(pulso, t, Δt, t.size)
     traza_normalizada = T / np.max(T)
 
     delays = np.linspace(-(t.size - 1) * Δt, (t.size - 1) * Δt, num=2 * t.size - 1)
 
-    im = ax[1][2].pcolormesh(frecuencias, delays, traza_normalizada, cmap='inferno')
+    im = ax[1][2].pcolormesh(frecuencias, delays, traza_normalizada, cmap='YlGnBu_r')
     fig.colorbar(im, ax=ax[1][2])
     ax[1][2].set_xlabel("Frecuencia (1/ps)")
     ax[1][2].set_ylabel("Retraso (ps)")

@@ -6,6 +6,8 @@ Este script simplemente contiene la arquitectura de la red y su entrenamiento,
 para ver los resultados usar el archivo 'visualizacion_NN.py'
 """
 
+import numpy as np
+
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Dense, Input, Conv2D, MaxPooling2D, Flatten, Dropout
 

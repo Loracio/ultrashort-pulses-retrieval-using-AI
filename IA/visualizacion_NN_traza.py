@@ -5,6 +5,7 @@ resultados de la traza obtenidos por la NN y compararlos
 con los valores teóricos de las trazas de los pulsos.
 """
 
+import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button

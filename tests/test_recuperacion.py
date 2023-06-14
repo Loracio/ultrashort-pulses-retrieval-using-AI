@@ -4,7 +4,7 @@ import scipy.constants as constants
 import path_helper # Para poder cargar el módulo de 'core' sin tener que cambiar el path
 from core import * 
 
-plt.rcParams.update({'font.size': 14}) # Tamaño de la fuente del plot
+plt.rcParams.update({'font.size': 40}) # Tamaño de la fuente del plot
 
 if __name__ == '__main__':
 
@@ -18,11 +18,11 @@ if __name__ == '__main__':
     """
 
     # Parámetros de la medida
-    numero_de_muestras = 128
+    numero_de_muestras = 256*2
     duracion_temporal = 1 # Tiempo total de medida de la señal (ps)
     frecuencia_muestreo = numero_de_muestras / duracion_temporal # En THz
 
-    TBP = .75
+    TBP = 1.5
 
     t, Δt = np.linspace(-duracion_temporal/2, duracion_temporal/2, num=numero_de_muestras, retstep=True) # Vector de tiempos. Guardamos la separación entre datos (inversa de la frecuencia de muestreo)
     frecuencias = frecuencias_DFT(numero_de_muestras, Δt)
@@ -42,16 +42,16 @@ if __name__ == '__main__':
     pulso_candidato = np.exp(-0.5 * d * d) * fase
     espectro_candidato = DFT(pulso_candidato, t, Δt, ω, Δω)
 
-    # Plot intensidad y traza original
-    # fig0, ax0 = plot_traza(t, Δt, pulso_candidato, frecuencias, espectro_candidato)
+    # Plot intensidad y traza pulso candidato inicial
+    fig0, ax0 = plot_traza(t, Δt, pulso_candidato, frecuencias, espectro_candidato)
 
-    # retriever_PCGPA = PCGPA_retriever(t, Δt, pulso)
-    # campo_recuperado_PCGPA, espectro_recuperado_PCGPA = retriever_PCGPA.recuperacion(pulso_candidato, 1e-10, max_iter=500)
-    # fig_PCGPA, ax_PCGPA = retriever_PCGPA.plot()
+    retriever_PCGPA = PCGPA_retriever(t, Δt, pulso)
+    campo_recuperado_PCGPA, espectro_recuperado_PCGPA = retriever_PCGPA.recuperacion(pulso_candidato, 1e-10, max_iter=500)
+    fig_PCGPA, ax_PCGPA = retriever_PCGPA.plot()
 
     retriever_GPA = GPA_retriever(t, Δt, pulso)
-    campo_recuperado_GPA, espectro_recuperado_GPA = retriever_GPA.recuperacion(pulso_candidato, 1e-20, max_iter=200)
-    # fig_GPA, ax_GPA = retriever_GPA.plot()
+    campo_recuperado_GPA, espectro_recuperado_GPA = retriever_GPA.recuperacion(pulso_candidato, 1e-10, max_iter=200)
+    retriever_GPA.plot()
 
-    # plt.show()
+    plt.show()
 

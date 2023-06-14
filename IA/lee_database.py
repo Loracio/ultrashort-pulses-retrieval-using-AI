@@ -3,6 +3,7 @@ Este script proporciona las subrutinas para leer y formatear la base de datos cr
 en 'crea_database.py'
 """
 
+import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import path_helper # Para poder cargar el módulo de 'core' sin tener que cambiar el path

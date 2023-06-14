@@ -19,8 +19,8 @@ Incluye:
 """
 
 import numpy as np
-from .fourier import *
-from .unidades import *
+from .fourier import DFT, frecuencias_DFT
+from .unidades import convertir
 
 def trapecio(func_vals, h):
     """

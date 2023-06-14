@@ -10,6 +10,7 @@ y pintarla frente a la traza real del pulso para ver
 el error.
 """
 
+import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
@@ -160,13 +161,13 @@ class visualizador_resultados():
         self.previously_clicked = None
         self.mode = 'random'
 
-        self.im0 = self.ax0.pcolormesh(self.frecuencias, self.delays, self.T[0][:].reshape(2*N - 1, N) / np.max(self.T[0][:]), cmap='inferno')
+        self.im0 = self.ax0.pcolormesh(self.frecuencias, self.delays, self.T[0][:].reshape(2*N - 1, N) / np.max(self.T[0][:]), cmap='YlGnBu_r')
         self.fig.colorbar(self.im0, ax=self.ax0)
         self.ax0.set_xlabel("Frecuencia (1/ps)")
         self.ax0.set_ylabel("Retraso (ps)")
         self.ax0.set_title("Traza real del pulso")
 
-        self.im1 = self.ax1.pcolormesh(self.frecuencias, self.delays, self.T_pred[0].reshape(2*N - 1, N) / np.max(self.T_pred[0][:]), cmap='inferno')
+        self.im1 = self.ax1.pcolormesh(self.frecuencias, self.delays, self.T_pred[0].reshape(2*N - 1, N) / np.max(self.T_pred[0][:]), cmap='YlGnBu_r')
         self.fig.colorbar(self.im1, ax=self.ax1)
         self.ax1.set_xlabel("Frecuencia (1/ps)")
         self.ax1.set_ylabel("Retraso (ps)")
@@ -210,7 +211,7 @@ class visualizador_resultados():
         self.ax3.plot(np.nan, '-.', label='Fase', color='red')
         self.line_I_pulso_pred, = self.ax3.plot(self.t, I_pulso_pred / np.max(I_pulso_pred), color='orange', label='Intensidad campo predicho')
         self.line_fase_campo_pred, = self.twin_ax3.plot(self.t, fase_campo_pred, '-.', color='violet')
-        self.ax3.plot(np.nan, '-.', label='Fase campo predicho', color='red')
+        self.ax3.plot(np.nan, '-.', label='Fase campo predicho', color='violet')
         self.ax3.set_xlabel("Tiempo (ps)")
         self.ax3.set_ylabel("Intensidad (u.a.)")
         self.twin_ax3.set_ylabel("Fase (rad)")
@@ -223,7 +224,7 @@ class visualizador_resultados():
         self.ax4.plot(np.nan, '-.', label='Fase', color='red')
         self.line_I_espectro_pred, = self.ax4.plot(self.frecuencias, I_espectro_pred / np.max(I_espectro_pred), color='orange', label='Intensidad espectral predicha')
         self.line_fase_espectro_pred, = self.twin_ax4.plot(self.frecuencias, fase_espectro_pred, '-.', color='violet')
-        self.ax4.plot(np.nan, '-.', label='Fase espectral predicha', color='red')
+        self.ax4.plot(np.nan, '-.', label='Fase espectral predicha', color='violet')
         self.ax4.set_xlabel("Frecuencia (1 / ps)")
         self.ax4.set_ylabel("Intensidad (u.a.)")
         self.twin_ax4.set_ylabel("Fase (rad)")

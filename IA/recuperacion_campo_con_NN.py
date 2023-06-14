@@ -8,6 +8,7 @@ salida la parte real e imaginaria del campo eléctrico.
 Este script simplemente contiene la arquitectura de la red y su entrenamiento,
 para ver los resultados usar el archivo 'visualizacion_campo_NN.py'
 """
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Dense, Input, Conv2D, MaxPooling2D, Flatten, Dropout
